@@ -1,0 +1,33 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# macOS / Windows
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/*
+!.vscode/extensions.json
+
+# Proyecto generado por XcodeGen (se crea con `xcodegen generate`)
+VozTranslate360.xcodeproj/
+
+# Salidas de la integración continua
+logs/
+screenshots/
+ipa/
+*.xcresult

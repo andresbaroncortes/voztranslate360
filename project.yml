@@ -1,0 +1,67 @@
+# VozTranslate 360 — Atlas Business
+# Definición del proyecto para XcodeGen (https://github.com/yonaskolb/XcodeGen).
+# El .xcodeproj NO se guarda en git: se genera con `xcodegen generate`
+# (en GitHub Actions o en cualquier Mac).
+
+name: VozTranslate360
+
+options:
+  bundleIdPrefix: com.atlasbusiness
+  deploymentTarget:
+    iOS: "18.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    # Diagnósticos de concurrencia completos (avisos, no errores) para
+    # detectar desde ya cualquier problema de Swift 6.
+    SWIFT_STRICT_CONCURRENCY: complete
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  VozTranslate360:
+    type: application
+    platform: iOS
+    sources:
+      - path: VozTranslate360
+        excludes:
+          - "Resources/PrivacyInfo.xcprivacy"
+      - path: VozTranslate360/Resources/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.atlasbusiness.VozTranslate360
+        PRODUCT_NAME: VozTranslate360
+        TARGETED_DEVICE_FAMILY: "1"
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+        ENABLE_PREVIEWS: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: "VozTranslate 360"
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.travel
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: UIInterfaceOrientationPortrait
+        INFOPLIST_KEY_NSMicrophoneUsageDescription: "VozTranslate 360 usa el micrófono para escuchar la frase que quieres traducir. El audio no se guarda."
+        INFOPLIST_KEY_NSSpeechRecognitionUsageDescription: "VozTranslate 360 convierte tu voz en texto para traducirla. Siempre que sea posible, se hace en tu iPhone."
+    scheme:
+      testTargets:
+        - VozTranslate360Tests
+      gatherCoverageData: true
+
+  VozTranslate360Tests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: VozTranslate360Tests
+    dependencies:
+      - target: VozTranslate360
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.atlasbusiness.VozTranslate360Tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
