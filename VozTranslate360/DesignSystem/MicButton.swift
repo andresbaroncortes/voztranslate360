@@ -14,6 +14,8 @@ struct MicButton: View {
     let speaker: Speaker
     let isActive: Bool
     let isEnabled: Bool
+    /// Texto bajo el título; por defecto, el nombre del idioma en español.
+    var subtitle: String? = nil
     let action: () -> Void
 
     var body: some View {
@@ -48,7 +50,7 @@ struct MicButton: View {
                 VStack(spacing: 2) {
                     Text(title)
                         .font(.subheadline.weight(.semibold))
-                    Text("\(language.flag) \(language.displayName)")
+                    Text("\(language.flag) \(subtitle ?? language.displayName)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

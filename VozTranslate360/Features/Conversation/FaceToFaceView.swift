@@ -137,7 +137,8 @@ private struct FacePanel: View {
                 language: language,
                 speaker: reader,
                 isActive: isListening,
-                isEnabled: viewModel.canUseMicrophone(reader)
+                isEnabled: viewModel.canUseMicrophone(reader),
+                subtitle: language.nativeName
             ) {
                 viewModel.toggleListening(for: reader)
             }
