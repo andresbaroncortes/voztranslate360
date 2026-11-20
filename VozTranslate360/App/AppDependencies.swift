@@ -46,15 +46,15 @@ final class AppDependencies {
     }
 
     /// Servicios reales disponibles hasta la fase actual.
-    /// Fase 2: traducción y disponibilidad reales; dictado, voz y
-    /// conectividad siguen simulados (Fases 3 y 5).
+    /// Fase 3: traducción, disponibilidad, dictado y voz reales;
+    /// la conectividad sigue simulada hasta la Fase 5.
     static func live() -> AppDependencies {
         let checker = AppleLanguageAvailabilityService()
         return AppDependencies(
             translator: AppleTranslationService(availability: checker),
             availability: checker,
-            recognizer: MockSpeechRecognizer(),
-            synthesizer: MockSpeechSynthesizer(),
+            recognizer: AppleSpeechRecognizer(),
+            synthesizer: AppleSpeechSynthesizer(),
             connectivity: MockConnectivityMonitor()
         )
     }

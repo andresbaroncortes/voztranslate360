@@ -13,7 +13,7 @@ Desarrollado por **Atlas Business**.
 |---|---|---|
 | 1 | Arquitectura, carpetas y diseño SwiftUI (servicios simulados) | ✅ Aprobada (2026-11-20) |
 | 2 | Selección de idiomas y traducción de texto (Apple Translation real) | **En validación** |
-| 3 | Reconocimiento de voz y lectura de traducciones | Pendiente |
+| 3 | Reconocimiento de voz y lectura de traducciones | En desarrollo (rama `fase-3`) |
 | 4 | Traducción bidireccional | Pendiente |
 | 5 | Recursos offline y conectividad | Pendiente |
 | 6 | Historial, ajustes y optimización | Pendiente |
@@ -75,3 +75,24 @@ La Fase 1 usa servicios **simulados**: no usa el micrófono ni traduce de verdad
 4. Activa el **modo avión**, cambia el modo a **Sin conexión** y traduce otra frase con el mismo par: debe funcionar sin internet.
 5. Con modo **Sin conexión**, elige un par marcado «Requiere descarga» y traduce: debe aparecer un aviso claro (sin intentar descargar).
 6. Prueba los seis idiomas en ambos sentidos con ⇄ y anota cuáles quedan «Sin conexión».
+
+## Fase 3 — Lista de comprobación (rama `fase-3`)
+
+**Qué cambia:** dictado real (Speech + AVAudioEngine) y lectura en voz alta (AVSpeechSynthesizer). El audio solo pasa por memoria y nunca se guarda.
+
+| Modo | Dictado |
+|---|---|
+| Sin conexión | En el iPhone; si el idioma no lo admite, aviso |
+| Automático | En el iPhone si el idioma lo admite; si no, servidores de Apple |
+| En línea | Servidores de Apple (gratuito, con límites de uso de Apple) |
+
+**Automática (GitHub Actions):** pruebas `Fase3SpeechTests` y líneas `DICTADO …` / `VOZ …` en el registro.
+
+**En el iPhone:**
+1. Pulsa «Yo hablo»: iOS pide permiso de **micrófono** y de **reconocimiento de voz**. Acepta.
+2. Di «¿Dónde está la estación de tren?» y pulsa ■. Debe aparecer el texto mientras hablas, luego la traducción, y oírse en inglés por el altavoz.
+3. Pulsa «Responde» y habla en inglés: debe traducir al español y leerlo.
+4. Pulsa «Detener» a mitad de una frase: debe cortar todo al instante.
+5. Activa el **modo avión**, modo **Sin conexión**, y dicta en español: debe funcionar (o avisar si tu iPhone no tiene dictado sin conexión para ese idioma).
+6. Niega el permiso (Ajustes ▸ VozTranslate 360) y pulsa un micrófono: debe aparecer el aviso con **Abrir Ajustes**.
+7. Mientras grabas, sal de la app: al volver, la grabación debe estar detenida.

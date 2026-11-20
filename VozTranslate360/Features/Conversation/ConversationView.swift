@@ -7,11 +7,14 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct ConversationView: View {
     @Environment(ConversationViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var settings
     @Environment(AppDependencies.self) private var dependencies
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.openURL) private var openURL
 
     @State private var pickerSide: ConversationViewModel.LanguageSide?
     @State private var draft = ""
@@ -88,7 +91,18 @@ struct ConversationView: View {
                 }
                 #endif
             }
+            // Privacidad: nunca se sigue grabando con la app en segundo plano.
+            // (Solo .background: el aviso de permisos de iOS pone la app en
+            // .inactive y no debe cortar la grabación.)
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .background { viewModel.stopAll() }
+            }
             .alert("Aviso", isPresented: errorBinding) {
+                if viewModel.errorOffersSettings {
+                    Button("Abrir Ajustes") {
+                        if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                    }
+                }
                 Button("Aceptar", role: .cancel) {}
             } message: {
                 Text(viewModel.errorMessage ?? "")
@@ -158,7 +172,12 @@ struct ConversationView: View {
     private var errorBinding: Binding<Bool> {
         Binding(
             get: { viewModel.errorMessage != nil },
-            set: { if !$0 { viewModel.errorMessage = nil } }
+            set: {
+                if !$0 {
+                    viewModel.errorMessage = nil
+                    viewModel.errorOffersSettings = false
+                }
+            }
         )
     }
 }
