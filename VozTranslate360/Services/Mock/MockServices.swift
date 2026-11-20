@@ -121,7 +121,15 @@ final class MockSpeechSynthesizer: SpeechSynthesizing {
 
     private(set) var isSpeaking = false
 
-    func speak(_ text: String, language: AppLanguage, rate: Double) async {
+    func availableVoices(for language: AppLanguage) -> [VoiceOption] {
+        let code = language.voiceLanguageCode
+        return [
+            VoiceOption(id: "mock.premium.\(code)", name: "Voz natural", languageCode: code, quality: .premium),
+            VoiceOption(id: "mock.standard.\(code)", name: "Voz básica", languageCode: code, quality: .standard)
+        ]
+    }
+
+    func speak(_ text: String, language: AppLanguage, rate: Double, voiceIdentifier: String?) async {
         isSpeaking = true
         defer { isSpeaking = false }
         // Duración aproximada según la longitud del texto.

@@ -167,8 +167,13 @@ protocol SpeechSynthesizing: AnyObject {
     var isSpeaking: Bool { get }
 
     /// Lee el texto en voz alta y vuelve cuando termina o se detiene.
-    /// - Parameter rate: 0…1 (0,5 = velocidad normal).
-    func speak(_ text: String, language: AppLanguage, rate: Double) async
+    /// - Parameters:
+    ///   - rate: 0…1 (0,5 = velocidad normal).
+    ///   - voiceIdentifier: voz elegida por el usuario; `nil` = la mejor instalada.
+    func speak(_ text: String, language: AppLanguage, rate: Double, voiceIdentifier: String?) async
+
+    /// Voces instaladas para el idioma, de mejor a peor.
+    func availableVoices(for language: AppLanguage) -> [VoiceOption]
 
     func stopSpeaking()
 }

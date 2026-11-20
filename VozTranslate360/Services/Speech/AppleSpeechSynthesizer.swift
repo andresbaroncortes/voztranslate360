@@ -3,7 +3,9 @@
 //  VozTranslate 360 — Atlas Business
 //
 //  Lectura en voz alta con AVSpeechSynthesizer (siempre local).
-//  Elige la mejor voz instalada del idioma: premium > mejorada > estándar.
+//  Usa la voz elegida por el usuario o, si no eligió, la mejor instalada
+//  de cualquier variante regional: premium > mejorada > estándar.
+//  (Las voces de Siri no están disponibles para apps de terceros.)
 //
 
 import AVFoundation
@@ -21,11 +23,15 @@ final class AppleSpeechSynthesizer: NSObject, SpeechSynthesizing {
         synthesizer.delegate = self
     }
 
-    func speak(_ text: String, language: AppLanguage, rate: Double) async {
+    func availableVoices(for language: AppLanguage) -> [VoiceOption] {
+        VoiceRanking.candidates(among: VoiceSelector.installedVoices(), for: language)
+    }
+
+    func speak(_ text: String, language: AppLanguage, rate: Double, voiceIdentifier: String?) async {
         finishCurrent()
 
         let utterance = AVSpeechUtterance(string: text)
-        utterance.voice = VoiceSelector.bestVoice(for: language)
+        utterance.voice = VoiceSelector.bestVoice(for: language, preferredIdentifier: voiceIdentifier)
         let minimum = Double(AVSpeechUtteranceMinimumSpeechRate)
         let maximum = Double(AVSpeechUtteranceMaximumSpeechRate)
         utterance.rate = Float(min(max(rate, minimum), maximum))
@@ -81,18 +87,30 @@ extension AppleSpeechSynthesizer: AVSpeechSynthesizerDelegate {
 
 nonisolated enum VoiceSelector {
 
-    /// Mejor voz instalada para el idioma (sin voces «novedad» ni personales).
-    static func bestVoice(for language: AppLanguage) -> AVSpeechSynthesisVoice? {
-        let code = language.voiceLanguageCode
-        let voices = AVSpeechSynthesisVoice.speechVoices().filter {
-            !$0.voiceTraits.contains(.isNoveltyVoice) && !$0.voiceTraits.contains(.isPersonalVoice)
+    /// Voces instaladas (sin voces «novedad» ni personales).
+    static func installedVoices() -> [VoiceOption] {
+        AVSpeechSynthesisVoice.speechVoices()
+            .filter { !$0.voiceTraits.contains(.isNoveltyVoice) && !$0.voiceTraits.contains(.isPersonalVoice) }
+            .map { voice in
+                VoiceOption(id: voice.identifier,
+                            name: voice.name,
+                            languageCode: voice.language,
+                            quality: VoiceQuality(rawValue: voice.quality.rawValue) ?? .standard)
+            }
+    }
+
+    /// Voz elegida (si sigue instalada y es del idioma) o la mejor disponible.
+    static func bestVoice(for language: AppLanguage, preferredIdentifier: String? = nil) -> AVSpeechSynthesisVoice? {
+        let prefix = String(language.voiceLanguageCode.prefix(2))
+        if let preferredIdentifier,
+           let chosen = AVSpeechSynthesisVoice(identifier: preferredIdentifier),
+           chosen.language.hasPrefix(prefix) {
+            return chosen
         }
-        let exact = voices.filter { $0.language == code }
-        let prefix = String(code.prefix(2))
-        let candidates = exact.isEmpty ? voices.filter { $0.language.hasPrefix(prefix) } : exact
-        if let best = candidates.max(by: { $0.quality.rawValue < $1.quality.rawValue }) {
-            return best
+        if let best = VoiceRanking.best(among: installedVoices(), for: language),
+           let voice = AVSpeechSynthesisVoice(identifier: best.id) {
+            return voice
         }
-        return AVSpeechSynthesisVoice(language: code)
+        return AVSpeechSynthesisVoice(language: language.voiceLanguageCode)
     }
 }

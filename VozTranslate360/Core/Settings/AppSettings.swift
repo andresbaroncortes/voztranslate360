@@ -21,6 +21,7 @@ final class AppSettings {
         static let targetLanguage = "settings.targetLanguage"
         static let autoEndOnPause = "settings.autoEndOnPause"
         static let autoTurnTaking = "settings.autoTurnTaking"
+        static let preferredVoices = "settings.preferredVoices"
     }
 
     private let defaults: UserDefaults
@@ -54,6 +55,20 @@ final class AppSettings {
         didSet { defaults.set(autoTurnTaking, forKey: Keys.autoTurnTaking) }
     }
 
+    /// Voz elegida por idioma (AppLanguage.rawValue → identificador de voz).
+    /// Si un idioma no aparece, se usa la mejor voz instalada.
+    var preferredVoices: [String: String] {
+        didSet { defaults.set(preferredVoices, forKey: Keys.preferredVoices) }
+    }
+
+    func voiceIdentifier(for language: AppLanguage) -> String? {
+        preferredVoices[language.rawValue]
+    }
+
+    func setVoice(_ identifier: String?, for language: AppLanguage) {
+        preferredVoices[language.rawValue] = identifier
+    }
+
     var sourceLanguage: AppLanguage {
         didSet { defaults.set(sourceLanguage.rawValue, forKey: Keys.sourceLanguage) }
     }
@@ -71,6 +86,7 @@ final class AppSettings {
         self.saveHistory = defaults.object(forKey: Keys.saveHistory) as? Bool ?? true
         self.autoEndOnPause = defaults.object(forKey: Keys.autoEndOnPause) as? Bool ?? true
         self.autoTurnTaking = defaults.object(forKey: Keys.autoTurnTaking) as? Bool ?? false
+        self.preferredVoices = defaults.dictionary(forKey: Keys.preferredVoices) as? [String: String] ?? [:]
         self.sourceLanguage = defaults.string(forKey: Keys.sourceLanguage)
             .flatMap(AppLanguage.init(rawValue:)) ?? .spanish
         self.targetLanguage = defaults.string(forKey: Keys.targetLanguage)

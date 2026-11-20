@@ -38,6 +38,11 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("Leer traducciones en voz alta", isOn: $settings.autoSpeak)
+                    NavigationLink {
+                        VoicesView()
+                    } label: {
+                        Label("Elegir voz por idioma", systemImage: "person.wave.2")
+                    }
                     VStack(alignment: .leading) {
                         Text("Velocidad de lectura")
                         Slider(value: $settings.speechRate, in: 0.3...0.7) {
@@ -51,7 +56,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Voz")
                 } footer: {
-                    Text("Para una voz más natural, descarga voces «mejoradas» o «premium» en Ajustes ▸ Accesibilidad ▸ Contenido leído ▸ Voces. La app usa la mejor voz instalada de cada idioma.")
+                    Text("Para una voz más natural, descarga voces «Mejoradas» o «Premium» (gratuitas, sin conexión) en Ajustes ▸ Accesibilidad ▸ Contenido leído ▸ Voces. Sin elegir nada, la app usa la mejor voz instalada de cada idioma.")
                 }
 
                 Section {

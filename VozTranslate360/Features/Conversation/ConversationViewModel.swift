@@ -139,7 +139,9 @@ final class ConversationViewModel {
         // lance dos lecturas a la vez.
         phase = .speaking
         workTask = Task {
-            await dependencies.synthesizer.speak(turn.translatedText, language: turn.targetLanguage, rate: settings.speechRate)
+            await dependencies.synthesizer.speak(turn.translatedText, language: turn.targetLanguage,
+                                                 rate: settings.speechRate,
+                                                 voiceIdentifier: settings.voiceIdentifier(for: turn.targetLanguage))
             guard !Task.isCancelled else { return }
             phase = .idle
         }
@@ -275,7 +277,9 @@ final class ConversationViewModel {
 
             if settings.autoSpeak {
                 phase = .speaking
-                await dependencies.synthesizer.speak(result.text, language: to, rate: settings.speechRate)
+                await dependencies.synthesizer.speak(result.text, language: to,
+                                                     rate: settings.speechRate,
+                                                     voiceIdentifier: settings.voiceIdentifier(for: to))
                 guard !Task.isCancelled else { return }
             }
 
