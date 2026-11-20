@@ -8,7 +8,7 @@
 
 import Foundation
 import Testing
-import Translation
+@preconcurrency import Translation
 @testable import VozTranslate360
 
 /// Traductor que siempre falla, para comprobar cómo se informa el error.
@@ -134,12 +134,17 @@ struct Fase2TranslationTests {
 
     // MARK: Apple Translation (consulta real)
 
+    /// Fuera del hilo principal: LanguageAvailability no es Sendable.
+    nonisolated private static func supportedLanguageCodes() async -> [String] {
+        let checker = LanguageAvailability()
+        return await checker.supportedLanguages.map { $0.minimalIdentifier }.sorted()
+    }
+
     /// Consulta a iOS los 30 pares. No falla por el resultado (depende del
     /// dispositivo); lo imprime en el registro como evidencia.
     @Test(.timeLimit(.minutes(2)))
     func matrizRealDeDisponibilidad() async {
-        let supported = await LanguageAvailability().supportedLanguages
-        let codes = supported.map { $0.minimalIdentifier }.sorted()
+        let codes = await Self.supportedLanguageCodes()
         print("DISPONIBILIDAD idiomas admitidos por Translation (\(codes.count)): \(codes.joined(separator: ", "))")
 
         let service = AppleLanguageAvailabilityService()

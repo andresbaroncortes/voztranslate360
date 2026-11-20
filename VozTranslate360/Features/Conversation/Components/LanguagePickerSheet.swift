@@ -48,8 +48,9 @@ struct LanguagePickerSheet: View {
 
     private func row(for language: AppLanguage) -> some View {
         let status = statuses[language]
-        let isUnsupported = status == .unsupported && language != counterpart
 
+        // Los «No disponible» no se bloquean: si iOS informara mal un par,
+        // el usuario puede intentarlo y verá el aviso al traducir.
         return Button {
             onSelect(language)
             dismiss()
@@ -74,8 +75,6 @@ struct LanguagePickerSheet: View {
             }
             .padding(.vertical, 4)
         }
-        .disabled(isUnsupported)
-        .opacity(isUnsupported ? 0.45 : 1)
     }
 
     @ViewBuilder
