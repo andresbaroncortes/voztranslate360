@@ -14,6 +14,9 @@ nonisolated enum Speaker: String, Codable, Sendable {
     case me
     /// La otra persona (habla el idioma de destino).
     case partner
+
+    /// El otro participante de la conversación.
+    var other: Speaker { self == .me ? .partner : .me }
 }
 
 nonisolated struct ConversationTurn: Identifiable, Equatable, Sendable {

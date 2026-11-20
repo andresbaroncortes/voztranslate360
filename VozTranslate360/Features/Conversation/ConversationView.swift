@@ -18,6 +18,8 @@ struct ConversationView: View {
 
     @State private var pickerSide: ConversationViewModel.LanguageSide?
     @State private var draft = ""
+    @State private var showsFaceToFace = false
+    @State private var largeTurn: ConversationTurn?
 
     var body: some View {
         NavigationStack {
@@ -64,12 +66,24 @@ struct ConversationView: View {
             .navigationTitle("VozTranslate 360")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cara a cara", systemImage: "person.2.wave.2") {
+                        showsFaceToFace = true
+                    }
+                    .accessibilityHint("Divide la pantalla para conversar con el iPhone sobre la mesa")
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Limpiar conversación", systemImage: "trash") {
                         viewModel.clearConversation()
                     }
                     .disabled(viewModel.turns.isEmpty)
                 }
+            }
+            .fullScreenCover(isPresented: $showsFaceToFace) {
+                FaceToFaceView()
+            }
+            .fullScreenCover(item: $largeTurn) { turn in
+                LargeTextView(turn: turn)
             }
             .sheet(item: $pickerSide) { side in
                 LanguagePickerSheet(
@@ -88,6 +102,9 @@ struct ConversationView: View {
                 }
                 if DemoMode.opensLanguagePicker {
                     pickerSide = .target
+                }
+                if DemoMode.opensFaceToFace {
+                    showsFaceToFace = true
                 }
                 #endif
             }
@@ -128,6 +145,8 @@ struct ConversationView: View {
                         ForEach(viewModel.turns) { turn in
                             TurnBubble(turn: turn, canReplay: viewModel.phase == .idle) {
                                 viewModel.replay(turn)
+                            } onShowLarge: {
+                                largeTurn = turn
                             }
                             .id(turn.id)
                         }

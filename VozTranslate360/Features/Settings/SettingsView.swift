@@ -55,6 +55,15 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    Toggle("Terminar la frase al hacer una pausa", isOn: $settings.autoEndOnPause)
+                    Toggle("Turnos automáticos", isOn: $settings.autoTurnTaking)
+                } header: {
+                    Text("Conversación")
+                } footer: {
+                    Text("Con la pausa activada no hace falta pulsar ■: la frase termina sola tras un silencio breve. Con turnos automáticos, después de leer la traducción la app escucha a la otra persona. Si nadie habla en 10 segundos, el micrófono se cierra.")
+                }
+
+                Section {
                     Button("Abrir Ajustes de iOS", systemImage: "gear") {
                         if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
                     }

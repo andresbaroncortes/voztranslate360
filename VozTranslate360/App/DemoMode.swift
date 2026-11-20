@@ -10,6 +10,7 @@
 //    -demo                            Servicios simulados + conversación e historial de ejemplo.
 //    -demo-listen                     Empieza a «escuchar» al abrir la app.
 //    -demo-picker                     Abre el selector de idioma de destino.
+//    -demo-face                       Abre el modo cara a cara.
 //    -tab traducir|historial|ajustes  Pestaña inicial.
 //
 //  En la versión Release todas las propiedades devuelven el valor normal.
@@ -33,6 +34,7 @@ nonisolated enum DemoMode {
     static var usesMockServices: Bool { has("-demo") || has("-mock") }
     static var startsListening: Bool { has("-demo-listen") }
     static var opensLanguagePicker: Bool { has("-demo-picker") }
+    static var opensFaceToFace: Bool { has("-demo-face") }
 
     static var initialTab: AppTab {
         #if DEBUG

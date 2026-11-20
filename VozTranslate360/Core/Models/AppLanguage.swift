@@ -101,6 +101,44 @@ nonisolated enum AppLanguage: String, CaseIterable, Identifiable, Codable, Senda
         Locale(identifier: speechLocaleIdentifier)
     }
 
+    // MARK: Textos en el idioma de la otra persona (modo cara a cara)
+
+    /// «Hablar» en este idioma.
+    var speakLabel: String {
+        switch self {
+        case .spanish:    "Hablar"
+        case .english:    "Speak"
+        case .french:     "Parler"
+        case .italian:    "Parla"
+        case .german:     "Sprechen"
+        case .portuguese: "Falar"
+        }
+    }
+
+    /// Invitación a hablar, en este idioma.
+    var tapToSpeakPrompt: String {
+        switch self {
+        case .spanish:    "Toca el micrófono y habla en español"
+        case .english:    "Tap the microphone and speak in English"
+        case .french:     "Touchez le micro et parlez en français"
+        case .italian:    "Tocca il microfono e parla in italiano"
+        case .german:     "Tippen Sie auf das Mikrofon und sprechen Sie Deutsch"
+        case .portuguese: "Toque no microfone e fale em português"
+        }
+    }
+
+    /// «Escuchando…» en este idioma.
+    var listeningLabel: String {
+        switch self {
+        case .spanish:    "Escuchando…"
+        case .english:    "Listening…"
+        case .french:     "J'écoute…"
+        case .italian:    "Sto ascoltando…"
+        case .german:     "Ich höre zu…"
+        case .portuguese: "Ouvindo…"
+        }
+    }
+
     /// Frase de ejemplo usada por los servicios simulados de la Fase 1.
     /// Es la misma frase en los seis idiomas, para que la traducción
     /// simulada sea coherente.

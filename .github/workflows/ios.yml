@@ -110,6 +110,7 @@ jobs:
             shoot "$mode-4-historial"     5 -demo -tab historial
             shoot "$mode-5-ajustes"       5 -mock -tab ajustes
             shoot "$mode-6-idiomas"       5 -demo -demo-picker -tab traducir
+            shoot "$mode-7-cara-a-cara"   5 -demo -demo-face -tab traducir
           done
           ls -la screenshots
 

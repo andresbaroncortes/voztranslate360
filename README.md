@@ -14,7 +14,7 @@ Desarrollado por **Atlas Business**.
 | 1 | Arquitectura, carpetas y diseño SwiftUI (servicios simulados) | ✅ Aprobada (2026-11-20) |
 | 2 | Selección de idiomas y traducción de texto (Apple Translation real) | **En validación** |
 | 3 | Reconocimiento de voz y lectura de traducciones | En desarrollo (rama `fase-3`) |
-| 4 | Traducción bidireccional | Pendiente |
+| 4 | Traducción bidireccional | En desarrollo (rama `fase-4`) |
 | 5 | Recursos offline y conectividad | Pendiente |
 | 6 | Historial, ajustes y optimización | Pendiente |
 | 7 | Compilación e instalación en iPhone | Pendiente |
@@ -96,3 +96,17 @@ La Fase 1 usa servicios **simulados**: no usa el micrófono ni traduce de verdad
 5. Activa el **modo avión**, modo **Sin conexión**, y dicta en español: debe funcionar (o avisar si tu iPhone no tiene dictado sin conexión para ese idioma).
 6. Niega el permiso (Ajustes ▸ VozTranslate 360) y pulsa un micrófono: debe aparecer el aviso con **Abrir Ajustes**.
 7. Mientras grabas, sal de la app: al volver, la grabación debe estar detenida.
+
+## Fase 4 — Lista de comprobación (rama `fase-4`)
+
+**Qué cambia:**
+- **Cara a cara** (botón 👥 arriba a la izquierda): pantalla dividida; la mitad superior está girada para la otra persona y todo aparece en su idioma, con su micrófono.
+- **Fin de frase por pausa:** ya no hace falta pulsar ■; tras ~1,6 s de silencio la frase termina sola (Ajustes ▸ Conversación).
+- **Turnos automáticos** (opcional): tras leer la traducción, la app escucha a la otra persona. Si nadie habla en 10 s, el micrófono se cierra.
+- **Mostrar en grande** (⤢ en cada burbuja): traducción a pantalla completa, con botón para girarla 180°.
+
+**En el iPhone:**
+1. Con la pausa activada, pulsa «Yo hablo», di una frase y espera sin tocar nada: debe terminar sola y traducir.
+2. Activa **Turnos automáticos** y conversa con otra persona sin tocar la pantalla.
+3. Abre **Cara a cara**, pon el iPhone sobre la mesa y conversen: cada uno ve el texto en su idioma.
+4. Pulsa ⤢ en una burbuja y luego «Girar».

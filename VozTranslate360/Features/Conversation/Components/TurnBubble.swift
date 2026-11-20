@@ -13,6 +13,7 @@ struct TurnBubble: View {
     let turn: ConversationTurn
     let canReplay: Bool
     let onReplay: () -> Void
+    var onShowLarge: () -> Void = {}
 
     private var isMine: Bool { turn.speaker == .me }
 
@@ -31,6 +32,14 @@ struct TurnBubble: View {
                             .accessibilityLabel("Procesado en el iPhone")
                     }
                     Spacer(minLength: 0)
+                    Button(action: onShowLarge) {
+                        Image(systemName: "arrow.up.left.and.arrow.down.right")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(width: 32, height: 32)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Mostrar en grande")
                     Button(action: onReplay) {
                         Image(systemName: "speaker.wave.2.fill")
                             .font(.subheadline)
@@ -61,6 +70,7 @@ struct TurnBubble: View {
                     .strokeBorder(Theme.tint(for: turn.speaker).opacity(0.35), lineWidth: 1)
             )
             .contextMenu {
+                Button("Mostrar en grande", systemImage: "arrow.up.left.and.arrow.down.right", action: onShowLarge)
                 Button("Copiar traducción", systemImage: "doc.on.doc") {
                     UIPasteboard.general.string = turn.translatedText
                 }

@@ -43,6 +43,13 @@ final class ConversationViewModel {
     @ObservationIgnored private var workTask: Task<Void, Never>?
     /// Se pulsó «terminar frase» mientras el micrófono aún arrancaba.
     @ObservationIgnored private var stopRequested = false
+    /// Temporizador de pausa / ausencia de voz.
+    @ObservationIgnored private var silenceTask: Task<Void, Never>?
+
+    /// Pausa tras la cual la frase termina sola (si está activado).
+    @ObservationIgnored var pauseDuration: Duration = .milliseconds(1600)
+    /// Si nadie habla en este tiempo, se deja de escuchar.
+    @ObservationIgnored var noSpeechTimeout: Duration = .seconds(10)
 
     init(dependencies: AppDependencies, settings: AppSettings) {
         self.dependencies = dependencies
@@ -107,7 +114,7 @@ final class ConversationViewModel {
         liveTranscript = trimmed
         phase = .translating(.me)
         workTask = Task {
-            await translateAndSpeak(trimmed, speaker: .me)
+            await translateAndSpeak(trimmed, speaker: .me, fromVoice: false)
         }
     }
 
@@ -117,6 +124,8 @@ final class ConversationViewModel {
     func stopAll() {
         workTask?.cancel()
         workTask = nil
+        silenceTask?.cancel()
+        silenceTask = nil
         stopRequested = false
         dependencies.recognizer.stopRecognition()
         dependencies.synthesizer.stopSpeaking()
@@ -191,11 +200,18 @@ final class ConversationViewModel {
                 if stopRequested {
                     dependencies.recognizer.stopRecognition()
                 }
+                armSilenceTimer(afterSpeech: false)
                 for try await update in stream {
                     liveTranscript = update.text
-                    if update.isFinal { finalText = update.text }
+                    if update.isFinal {
+                        finalText = update.text
+                    } else if !update.text.isEmpty {
+                        armSilenceTimer(afterSpeech: true)
+                    }
                 }
+                cancelSilenceTimer()
             } catch {
+                cancelSilenceTimer()
                 guard !Task.isCancelled else { return }
                 report(error)
                 return
@@ -210,12 +226,35 @@ final class ConversationViewModel {
                 phase = .idle
                 return
             }
-            await translateAndSpeak(text, speaker: speaker)
+            await translateAndSpeak(text, speaker: speaker, fromVoice: true)
         }
     }
 
+    // MARK: Pausas
+
+    /// Programa el fin automático de la escucha:
+    /// • antes de oír nada → `noSpeechTimeout` (evita dejar el micrófono abierto);
+    /// • después de oír voz → `pauseDuration`, si «terminar al hacer pausa» está activo.
+    private func armSilenceTimer(afterSpeech: Bool) {
+        silenceTask?.cancel()
+        silenceTask = nil
+        if afterSpeech && !settings.autoEndOnPause { return }
+        let delay = afterSpeech ? pauseDuration : noSpeechTimeout
+        silenceTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, case .listening = self.phase else { return }
+            self.stopRequested = true
+            self.dependencies.recognizer.stopRecognition()
+        }
+    }
+
+    private func cancelSilenceTimer() {
+        silenceTask?.cancel()
+        silenceTask = nil
+    }
+
     /// Traduce, agrega el turno y lo lee en voz alta. Común a voz y texto.
-    private func translateAndSpeak(_ text: String, speaker: Speaker) async {
+    private func translateAndSpeak(_ text: String, speaker: Speaker, fromVoice: Bool) async {
         let (from, to) = languages(for: speaker)
         do {
             phase = .translating(speaker)
@@ -239,7 +278,13 @@ final class ConversationViewModel {
                 await dependencies.synthesizer.speak(result.text, language: to, rate: settings.speechRate)
                 guard !Task.isCancelled else { return }
             }
-            phase = .idle
+
+            // Turnos automáticos: ahora escucha a la otra persona.
+            if fromVoice && settings.autoTurnTaking {
+                startListening(for: speaker.other)
+            } else {
+                phase = .idle
+            }
         } catch is CancellationError {
             // Cancelado por stopAll(): el estado ya está restablecido.
         } catch {

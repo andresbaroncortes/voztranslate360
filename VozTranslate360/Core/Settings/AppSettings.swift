@@ -19,6 +19,8 @@ final class AppSettings {
         static let saveHistory = "settings.saveHistory"
         static let sourceLanguage = "settings.sourceLanguage"
         static let targetLanguage = "settings.targetLanguage"
+        static let autoEndOnPause = "settings.autoEndOnPause"
+        static let autoTurnTaking = "settings.autoTurnTaking"
     }
 
     private let defaults: UserDefaults
@@ -42,6 +44,16 @@ final class AppSettings {
         didSet { defaults.set(saveHistory, forKey: Keys.saveHistory) }
     }
 
+    /// Terminar la frase sola cuando la persona hace una pausa.
+    var autoEndOnPause: Bool {
+        didSet { defaults.set(autoEndOnPause, forKey: Keys.autoEndOnPause) }
+    }
+
+    /// Tras leer una traducción, escuchar automáticamente a la otra persona.
+    var autoTurnTaking: Bool {
+        didSet { defaults.set(autoTurnTaking, forKey: Keys.autoTurnTaking) }
+    }
+
     var sourceLanguage: AppLanguage {
         didSet { defaults.set(sourceLanguage.rawValue, forKey: Keys.sourceLanguage) }
     }
@@ -57,6 +69,8 @@ final class AppSettings {
         self.autoSpeak = defaults.object(forKey: Keys.autoSpeak) as? Bool ?? true
         self.speechRate = defaults.object(forKey: Keys.speechRate) as? Double ?? 0.5
         self.saveHistory = defaults.object(forKey: Keys.saveHistory) as? Bool ?? true
+        self.autoEndOnPause = defaults.object(forKey: Keys.autoEndOnPause) as? Bool ?? true
+        self.autoTurnTaking = defaults.object(forKey: Keys.autoTurnTaking) as? Bool ?? false
         self.sourceLanguage = defaults.string(forKey: Keys.sourceLanguage)
             .flatMap(AppLanguage.init(rawValue:)) ?? .spanish
         self.targetLanguage = defaults.string(forKey: Keys.targetLanguage)
