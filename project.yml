@@ -10,6 +10,8 @@ options:
   deploymentTarget:
     iOS: "18.0"
   createIntermediateGroups: true
+  # Idioma principal de la app (fechas, botones del sistema, etc.)
+  developmentLanguage: es
 
 settings:
   base:

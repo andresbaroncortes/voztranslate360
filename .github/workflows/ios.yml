@@ -93,7 +93,8 @@ jobs:
 
           shoot() {
             local name="$1"; local wait="$2"; shift 2
-            xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" "$@"
+            xcrun simctl launch --terminate-running-process "$UDID" "$BUNDLE_ID" \
+              -AppleLanguages "(es)" -AppleLocale es_CO "$@"
             sleep "$wait"
             xcrun simctl io "$UDID" screenshot "screenshots/$name.png"
           }
@@ -102,7 +103,7 @@ jobs:
             xcrun simctl ui "$UDID" appearance "$mode"
             shoot "$mode-1-inicio"        5 -tab traducir
             shoot "$mode-2-conversacion"  5 -demo -tab traducir
-            shoot "$mode-3-escuchando"    3 -demo -demo-listen -tab traducir
+            shoot "$mode-3-escuchando"    2 -demo -demo-listen -tab traducir
             shoot "$mode-4-historial"     5 -demo -tab historial
             shoot "$mode-5-ajustes"       5 -tab ajustes
           done
