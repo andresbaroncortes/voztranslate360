@@ -17,25 +17,29 @@ final class AppDependencies {
     let recognizer: any SpeechRecognitionProviding
     let synthesizer: any SpeechSynthesizing
     let connectivity: any ConnectivityMonitoring
+    let history: any HistoryStoring
 
     init(
         translator: any TranslationProviding,
         availability: any LanguageAvailabilityChecking,
         recognizer: any SpeechRecognitionProviding,
         synthesizer: any SpeechSynthesizing,
-        connectivity: any ConnectivityMonitoring
+        connectivity: any ConnectivityMonitoring,
+        history: (any HistoryStoring)? = nil
     ) {
         self.translator = translator
         self.availability = availability
         self.recognizer = recognizer
         self.synthesizer = synthesizer
         self.connectivity = connectivity
+        self.history = history ?? InMemoryHistoryStore()
     }
 
     /// Todo simulado: pruebas automáticas, Previews y capturas.
     /// - Parameter overrides: estado forzado de ciertos idiomas.
     static func mock(availability overrides: [AppLanguage: PairAvailability] = [:],
-                     isConnected: Bool = true) -> AppDependencies {
+                     isConnected: Bool = true,
+                     history: (any HistoryStoring)? = nil) -> AppDependencies {
         let checker = MockLanguageAvailability(overrides: overrides)
         let connectivity = MockConnectivityMonitor(isConnected: isConnected)
         return AppDependencies(
@@ -43,12 +47,13 @@ final class AppDependencies {
             availability: checker,
             recognizer: MockSpeechRecognizer(),
             synthesizer: MockSpeechSynthesizer(),
-            connectivity: connectivity
+            connectivity: connectivity,
+            history: history
         )
     }
 
     /// Todos los servicios reales (desde la Fase 5 ya no queda nada simulado).
-    static func live() -> AppDependencies {
+    static func live(history: any HistoryStoring) -> AppDependencies {
         let checker = AppleLanguageAvailabilityService()
         let connectivity = NetworkConnectivityMonitor()
         return AppDependencies(
@@ -56,16 +61,18 @@ final class AppDependencies {
             availability: checker,
             recognizer: AppleSpeechRecognizer(connectivity: connectivity),
             synthesizer: AppleSpeechSynthesizer(),
-            connectivity: connectivity
+            connectivity: connectivity,
+            history: history
         )
     }
 
-    static func makeDefault() -> AppDependencies {
+    static func makeDefault(history: any HistoryStoring) -> AppDependencies {
         if DemoMode.usesMockServices {
             // En las capturas se muestran estados variados (simulados).
             return mock(availability: [.german: .needsDownload, .portuguese: .needsDownload],
-                        isConnected: !DemoMode.simulatesOffline)
+                        isConnected: !DemoMode.simulatesOffline,
+                        history: history)
         }
-        return live()
+        return live(history: history)
     }
 }

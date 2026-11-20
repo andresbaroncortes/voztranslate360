@@ -55,6 +55,20 @@ final class ConversationEntry {
     }
 
     var speaker: Speaker { Speaker(rawValue: speakerRaw) ?? .me }
+
+    /// Turno equivalente (para mostrarlo en grande o reproducirlo).
+    var turn: ConversationTurn {
+        ConversationTurn(
+            id: entryID,
+            speaker: speaker,
+            sourceLanguage: sourceLanguage ?? .spanish,
+            targetLanguage: targetLanguage ?? .english,
+            originalText: originalText,
+            translatedText: translatedText,
+            processedOnDevice: processedOnDevice,
+            date: createdAt
+        )
+    }
     var sourceLanguage: AppLanguage? { AppLanguage(rawValue: sourceLanguageRaw) }
     var targetLanguage: AppLanguage? { AppLanguage(rawValue: targetLanguageRaw) }
 }

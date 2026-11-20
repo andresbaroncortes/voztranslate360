@@ -18,15 +18,18 @@ private final class ScriptedRecognizer: SpeechRecognitionProviding {
     private var continuation: AsyncThrowingStream<RecognitionUpdate, Error>.Continuation?
     private var lastText = ""
     private(set) var startedLanguages: [AppLanguage] = []
+    private(set) var startedLocales: [String] = []
 
     init(partials: [String]) { self.partials = partials }
 
-    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool { true }
+    func supportsOnDeviceDictation(for locale: Locale) -> Bool { true }
+    func dictationLocales(for language: AppLanguage) -> [Locale] { [language.speechLocale] }
 
     func requestAuthorization() async -> PermissionStatus { .authorized }
 
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
+    func startRecognition(language: AppLanguage, locale: Locale, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         startedLanguages.append(language)
+        startedLocales.append(locale.identifier)
         let (stream, continuation) = AsyncThrowingStream<RecognitionUpdate, Error>.makeStream()
         self.continuation = continuation
         lastText = ""

@@ -22,6 +22,8 @@ final class AppSettings {
         static let autoEndOnPause = "settings.autoEndOnPause"
         static let autoTurnTaking = "settings.autoTurnTaking"
         static let preferredVoices = "settings.preferredVoices"
+        static let dictationLocales = "settings.dictationLocales"
+        static let historyRetentionDays = "settings.historyRetentionDays"
     }
 
     private let defaults: UserDefaults
@@ -69,6 +71,24 @@ final class AppSettings {
         preferredVoices[language.rawValue] = identifier
     }
 
+    /// Variante regional del dictado por idioma (rawValue → identificador de Locale).
+    var dictationLocales: [String: String] {
+        didSet { defaults.set(dictationLocales, forKey: Keys.dictationLocales) }
+    }
+
+    func speechLocale(for language: AppLanguage) -> Locale {
+        dictationLocales[language.rawValue].map(Locale.init(identifier:)) ?? language.speechLocale
+    }
+
+    func setDictationLocale(_ identifier: String?, for language: AppLanguage) {
+        dictationLocales[language.rawValue] = identifier
+    }
+
+    /// Días que se conserva el historial (0 = siempre).
+    var historyRetentionDays: Int {
+        didSet { defaults.set(historyRetentionDays, forKey: Keys.historyRetentionDays) }
+    }
+
     var sourceLanguage: AppLanguage {
         didSet { defaults.set(sourceLanguage.rawValue, forKey: Keys.sourceLanguage) }
     }
@@ -87,6 +107,8 @@ final class AppSettings {
         self.autoEndOnPause = defaults.object(forKey: Keys.autoEndOnPause) as? Bool ?? true
         self.autoTurnTaking = defaults.object(forKey: Keys.autoTurnTaking) as? Bool ?? false
         self.preferredVoices = defaults.dictionary(forKey: Keys.preferredVoices) as? [String: String] ?? [:]
+        self.dictationLocales = defaults.dictionary(forKey: Keys.dictationLocales) as? [String: String] ?? [:]
+        self.historyRetentionDays = defaults.object(forKey: Keys.historyRetentionDays) as? Int ?? 0
         self.sourceLanguage = defaults.string(forKey: Keys.sourceLanguage)
             .flatMap(AppLanguage.init(rawValue:)) ?? .spanish
         self.targetLanguage = defaults.string(forKey: Keys.targetLanguage)

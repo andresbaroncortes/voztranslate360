@@ -51,6 +51,7 @@ struct OfflineResourcesView: View {
                 ForEach(AppLanguage.allCases) { language in
                     dictationRow(for: language)
                 }
+                NavigationLink("Variante regional del dictado") { DictationVariantsView() }
             } header: {
                 Text("Dictado en el iPhone")
             } footer: {
@@ -174,7 +175,7 @@ struct OfflineResourcesView: View {
                 : await dependencies.availability.availability(from: mainLanguage, to: language)
             result[language] = Row(
                 translation: translation,
-                onDeviceDictation: dependencies.recognizer.supportsOnDeviceDictation(for: language),
+                onDeviceDictation: dependencies.recognizer.supportsOnDeviceDictation(for: settings.speechLocale(for: language)),
                 bestVoice: dependencies.synthesizer.availableVoices(for: language).first?.quality
             )
         }

@@ -50,6 +50,8 @@ final class ConversationViewModel {
     @ObservationIgnored var pauseDuration: Duration = .milliseconds(1600)
     /// Si nadie habla en este tiempo, se deja de escuchar.
     @ObservationIgnored var noSpeechTimeout: Duration = .seconds(10)
+    /// Máximo de turnos en pantalla (el historial completo está en SwiftData).
+    @ObservationIgnored var maxTurnsInMemory = 200
 
     init(dependencies: AppDependencies, settings: AppSettings) {
         self.dependencies = dependencies
@@ -152,6 +154,19 @@ final class ConversationViewModel {
         turns.removeAll()
     }
 
+    // MARK: Historial
+
+    /// Borra del historial lo que supere el plazo elegido en Ajustes.
+    func applyHistoryRetention(now: Date = .now) {
+        guard settings.historyRetentionDays > 0 else { return }
+        let cutoff = now.addingTimeInterval(-Double(settings.historyRetentionDays) * 86_400)
+        try? dependencies.history.deleteOlderThan(cutoff)
+    }
+
+    func deleteAllHistory() throws {
+        try dependencies.history.deleteAll()
+    }
+
     #if DEBUG
     /// Solo depuración: conversación de ejemplo para capturas (ver DemoMode).
     func loadDemoConversation() {
@@ -185,6 +200,7 @@ final class ConversationViewModel {
 
     private func startListening(for speaker: Speaker) {
         let from = languages(for: speaker).from
+        let locale = settings.speechLocale(for: from)
         let mode = settings.processingMode
         liveTranscript = ""
         stopRequested = false
@@ -194,7 +210,7 @@ final class ConversationViewModel {
             var finalText = ""
             do {
                 // Puede tardar: la primera vez iOS pide los permisos.
-                let stream = try await dependencies.recognizer.startRecognition(language: from, mode: mode)
+                let stream = try await dependencies.recognizer.startRecognition(language: from, locale: locale, mode: mode)
                 if Task.isCancelled {
                     dependencies.recognizer.stopRecognition()
                     return
@@ -265,14 +281,21 @@ final class ConversationViewModel {
             )
             guard !Task.isCancelled else { return }
 
-            turns.append(ConversationTurn(
+            let turn = ConversationTurn(
                 speaker: speaker,
                 sourceLanguage: from,
                 targetLanguage: to,
                 originalText: text,
                 translatedText: result.text,
                 processedOnDevice: result.processedOnDevice
-            ))
+            )
+            turns.append(turn)
+            if turns.count > maxTurnsInMemory {
+                turns.removeFirst(turns.count - maxTurnsInMemory)
+            }
+            if settings.saveHistory {
+                dependencies.history.save(turn)
+            }
             liveTranscript = ""
 
             if settings.autoSpeak {

@@ -15,9 +15,14 @@ struct VozTranslate360App: App {
     @State private var dependencies: AppDependencies
     @State private var settings: AppSettings
     @State private var conversation: ConversationViewModel
+    private let container: ModelContainer
 
     init() {
-        let dependencies = AppDependencies.makeDefault()
+        let container = Self.makeContainer()
+        self.container = container
+        let dependencies = AppDependencies.makeDefault(
+            history: SwiftDataHistoryStore(context: container.mainContext)
+        )
         let settings = AppSettings()
         _dependencies = State(initialValue: dependencies)
         _settings = State(initialValue: settings)
@@ -35,6 +40,20 @@ struct VozTranslate360App: App {
                 .environment(settings)
                 .environment(conversation)
         }
-        .modelContainer(for: ConversationEntry.self)
+        .modelContainer(container)
+    }
+
+    /// Historial en disco; si fallara (p. ej. sin espacio), en memoria para
+    /// que la app siga funcionando.
+    private static func makeContainer() -> ModelContainer {
+        if let container = try? ModelContainer(for: ConversationEntry.self) {
+            return container
+        }
+        let memory = ModelConfiguration(isStoredInMemoryOnly: true)
+        do {
+            return try ModelContainer(for: ConversationEntry.self, configurations: memory)
+        } catch {
+            fatalError("No se pudo crear el almacenamiento del historial: \(error)")
+        }
     }
 }

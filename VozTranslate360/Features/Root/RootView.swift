@@ -17,6 +17,7 @@ nonisolated enum AppTab: String, Hashable {
 
 struct RootView: View {
     @State private var selection: AppTab = DemoMode.initialTab
+    @Environment(ConversationViewModel.self) private var conversation
 
     var body: some View {
         TabView(selection: $selection) {
@@ -32,6 +33,8 @@ struct RootView: View {
         }
         // Conexión con Apple Translation: siempre presente en la jerarquía.
         .background { TranslationSessionHost() }
+        // Aplica el plazo de conservación del historial al abrir la app.
+        .task { conversation.applyHistoryRetention() }
     }
 }
 

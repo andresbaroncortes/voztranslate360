@@ -12,6 +12,8 @@ struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(\.openURL) private var openURL
     @State private var showsOfflineResources = DemoMode.opensOfflineResources
+    @State private var confirmsDeleteHistory = false
+    @Environment(ConversationViewModel.self) private var conversation
 
     var body: some View {
         @Bindable var settings = settings
@@ -72,6 +74,11 @@ struct SettingsView: View {
                 }
 
                 Section {
+                    NavigationLink {
+                        DictationVariantsView()
+                    } label: {
+                        Label("Variante regional del dictado", systemImage: "globe.americas")
+                    }
                     Toggle("Terminar la frase al hacer una pausa", isOn: $settings.autoEndOnPause)
                     Toggle("Turnos automáticos", isOn: $settings.autoTurnTaking)
                 } header: {
@@ -92,6 +99,16 @@ struct SettingsView: View {
 
                 Section {
                     Toggle("Guardar historial de texto", isOn: $settings.saveHistory)
+                    Picker("Conservar historial", selection: $settings.historyRetentionDays) {
+                        Text("Siempre").tag(0)
+                        Text("7 días").tag(7)
+                        Text("30 días").tag(30)
+                        Text("90 días").tag(90)
+                    }
+                    .disabled(!settings.saveHistory)
+                    Button("Borrar todo el historial", systemImage: "trash", role: .destructive) {
+                        confirmsDeleteHistory = true
+                    }
                     Label("El audio nunca se guarda: solo se usa en memoria para el dictado.", systemImage: "lock.shield")
                         .foregroundStyle(.secondary)
                 } header: {
@@ -109,6 +126,17 @@ struct SettingsView: View {
             .navigationDestination(isPresented: $showsOfflineResources) {
                 OfflineResourcesView()
             }
+            .onChange(of: settings.historyRetentionDays) {
+                conversation.applyHistoryRetention()
+            }
+            .confirmationDialog("¿Borrar todo el historial?", isPresented: $confirmsDeleteHistory,
+                                titleVisibility: .visible) {
+                Button("Borrar todo", role: .destructive) {
+                    try? conversation.deleteAllHistory()
+                }
+            } message: {
+                Text("Se eliminarán todas las traducciones guardadas en este iPhone. No se puede deshacer.")
+            }
         }
     }
 
@@ -120,6 +148,10 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView()
-        .environment(AppSettings(defaults: UserDefaults(suiteName: "preview") ?? .standard))
+    let dependencies = AppDependencies.mock()
+    let settings = AppSettings(defaults: UserDefaults(suiteName: "preview") ?? .standard)
+    return SettingsView()
+        .environment(dependencies)
+        .environment(settings)
+        .environment(ConversationViewModel(dependencies: dependencies, settings: settings))
 }

@@ -16,7 +16,7 @@ Desarrollado por **Atlas Business**.
 | 3 | Reconocimiento de voz y lectura de traducciones | ✅ Aprobada (2026-11-20) |
 | 4 | Traducción bidireccional | En desarrollo (rama `fase-4`) |
 | 5 | Recursos offline y conectividad | En desarrollo (rama `fase-5`) |
-| 6 | Historial, ajustes y optimización | Pendiente |
+| 6 | Historial, ajustes y optimización | En desarrollo (rama `fase-6`) |
 | 7 | Compilación e instalación en iPhone | Pendiente |
 
 ## Dónde se hace cada tarea
@@ -124,3 +124,18 @@ La Fase 1 usa servicios **simulados**: no usa el micrófono ni traduce de verdad
 3. Activa el **modo avión**: el chip debe cambiar a «Sin conexión» en segundos.
 4. En modo avión, traduce con un idioma **no** descargado: aviso claro e inmediato.
 5. En modo avión, traduce y dicta con un idioma descargado: debe funcionar.
+
+## Fase 6 — Lista de comprobación (rama `fase-6`)
+
+**Qué cambia:**
+- **Historial automático** (solo texto, en el iPhone) si «Guardar historial» está activo; conservar 7/30/90 días o siempre; borrar todo con confirmación.
+- **Historial:** búsqueda, agrupado por día (Hoy, Ayer…), tocar para ver en grande, deslizar para borrar o copiar, compartir.
+- **Variante regional del dictado** (Ajustes ▸ Conversación): español de España, México, Colombia… según lo que admita iOS, indicando cuáles funcionan sin conexión.
+- **Optimización:** la pantalla no se apaga mientras se escucha/traduce o en cara a cara; la conversación en pantalla guarda como máximo 200 frases.
+
+**En el iPhone:**
+1. Traduce 3 frases y abre **Historial**: deben aparecer bajo «Hoy». Busca una palabra.
+2. Toca una entrada: se abre en grande. Desliza: borrar / copiar.
+3. Ajustes ▸ **Variante regional del dictado** ▸ elige **español (Colombia)** (si aparece) y dicta: debe reconocer mejor tu acento.
+4. Desactiva «Guardar historial», traduce: no debe aparecer en el historial.
+5. «Borrar todo el historial»: pide confirmación y lo vacía.

@@ -9,6 +9,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 struct FaceToFaceView: View {
     @Environment(ConversationViewModel.self) private var viewModel
@@ -26,6 +27,9 @@ struct FaceToFaceView: View {
         .background(AppBackground())
         .statusBarHidden()
         .persistentSystemOverlays(.hidden)
+        // En modo cara a cara la pantalla permanece encendida.
+        .onAppear { UIApplication.shared.isIdleTimerDisabled = true }
+        .onDisappear { UIApplication.shared.isIdleTimerDisabled = false }
     }
 
     private var controls: some View {

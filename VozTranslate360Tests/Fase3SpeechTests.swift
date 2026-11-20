@@ -18,11 +18,12 @@ private final class FailingRecognizer: SpeechRecognitionProviding {
     let error: SpeechServiceError
     init(error: SpeechServiceError) { self.error = error }
     func requestAuthorization() async -> PermissionStatus { .denied }
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
+    func startRecognition(language: AppLanguage, locale: Locale, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         throw error
     }
     func stopRecognition() {}
-    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool { false }
+    func supportsOnDeviceDictation(for locale: Locale) -> Bool { false }
+    func dictationLocales(for language: AppLanguage) -> [Locale] { [language.speechLocale] }
 }
 
 /// Reconocedor lento al arrancar (simula el diálogo de permisos).
@@ -30,9 +31,10 @@ private final class FailingRecognizer: SpeechRecognitionProviding {
 private final class SlowStartRecognizer: SpeechRecognitionProviding {
     private var continuation: AsyncThrowingStream<RecognitionUpdate, Error>.Continuation?
     private(set) var stopCalls = 0
-    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool { true }
+    func supportsOnDeviceDictation(for locale: Locale) -> Bool { true }
+    func dictationLocales(for language: AppLanguage) -> [Locale] { [language.speechLocale] }
     func requestAuthorization() async -> PermissionStatus { .authorized }
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
+    func startRecognition(language: AppLanguage, locale: Locale, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         try await Task.sleep(for: .milliseconds(300))
         let (stream, continuation) = AsyncThrowingStream<RecognitionUpdate, Error>.makeStream()
         self.continuation = continuation

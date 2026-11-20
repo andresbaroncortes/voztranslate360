@@ -174,13 +174,17 @@ protocol SpeechRecognitionProviding: AnyObject {
     /// Pide permisos si hace falta e inicia la escucha. El flujo emite
     /// resultados parciales y termina con uno final cuando se llama a
     /// `stopRecognition()`. El audio nunca se guarda.
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error>
+    /// - Parameter locale: variante regional elegida (es-ES, es-MX, es-CO…).
+    func startRecognition(language: AppLanguage, locale: Locale, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error>
 
     /// Detiene la escucha y cierra el flujo con el último texto.
     func stopRecognition()
 
-    /// `true` si este iPhone puede dictar el idioma sin conexión.
-    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool
+    /// `true` si este iPhone puede dictar esa variante sin conexión.
+    func supportsOnDeviceDictation(for locale: Locale) -> Bool
+
+    /// Variantes regionales que iOS admite para dictar el idioma.
+    func dictationLocales(for language: AppLanguage) -> [Locale]
 }
 
 @MainActor
@@ -197,6 +201,15 @@ protocol SpeechSynthesizing: AnyObject {
     func availableVoices(for language: AppLanguage) -> [VoiceOption]
 
     func stopSpeaking()
+}
+
+@MainActor
+protocol HistoryStoring: AnyObject {
+    /// Guarda el TEXTO de un turno (nunca audio).
+    func save(_ turn: ConversationTurn)
+    func deleteAll() throws
+    func deleteOlderThan(_ date: Date) throws
+    func count() -> Int
 }
 
 @MainActor

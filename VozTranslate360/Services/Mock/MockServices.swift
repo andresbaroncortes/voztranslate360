@@ -92,11 +92,15 @@ final class MockSpeechRecognizer: SpeechRecognitionProviding {
     /// Idiomas sin dictado local simulados (para pruebas y capturas).
     var languagesWithoutOnDevice: Set<AppLanguage> = []
 
-    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool {
-        !languagesWithoutOnDevice.contains(language)
+    func supportsOnDeviceDictation(for locale: Locale) -> Bool {
+        !languagesWithoutOnDevice.contains { locale.identifier.hasPrefix(String($0.speechLocaleIdentifier.prefix(2))) }
     }
 
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
+    func dictationLocales(for language: AppLanguage) -> [Locale] {
+        [language.speechLocale]
+    }
+
+    func startRecognition(language: AppLanguage, locale: Locale, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         cancelCurrent()
 
         let (stream, continuation) = AsyncThrowingStream<RecognitionUpdate, Error>.makeStream()

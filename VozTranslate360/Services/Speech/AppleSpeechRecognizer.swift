@@ -24,8 +24,20 @@ final class AppleSpeechRecognizer: SpeechRecognitionProviding {
         self.connectivity = connectivity
     }
 
-    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool {
-        SFSpeechRecognizer(locale: language.speechLocale)?.supportsOnDeviceRecognition ?? false
+    func supportsOnDeviceDictation(for locale: Locale) -> Bool {
+        SFSpeechRecognizer(locale: locale)?.supportsOnDeviceRecognition ?? false
+    }
+
+    /// Variantes regionales reales que admite Speech para el idioma.
+    func dictationLocales(for language: AppLanguage) -> [Locale] {
+        let code = String(language.speechLocaleIdentifier.prefix(2))
+        let names = Locale(identifier: "es")
+        return SFSpeechRecognizer.supportedLocales()
+            .filter { $0.language.languageCode?.identifier == code }
+            .sorted {
+                (names.localizedString(forIdentifier: $0.identifier) ?? $0.identifier)
+                    < (names.localizedString(forIdentifier: $1.identifier) ?? $1.identifier)
+            }
     }
 
     // MARK: Permisos
@@ -52,14 +64,14 @@ final class AppleSpeechRecognizer: SpeechRecognitionProviding {
 
     // MARK: Dictado
 
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
+    func startRecognition(language: AppLanguage, locale: Locale, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         engine?.cancel()
         engine = nil
 
         guard await requestAuthorization() == .authorized else {
             throw SpeechServiceError.permissionDenied
         }
-        guard let recognizer = SFSpeechRecognizer(locale: language.speechLocale) else {
+        guard let recognizer = SFSpeechRecognizer(locale: locale) else {
             throw SpeechServiceError.recognizerUnavailable(language)
         }
         let onDevice = try SpeechPolicy.requiresOnDevice(

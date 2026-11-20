@@ -114,6 +114,10 @@ struct ConversationView: View {
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .background { viewModel.stopAll() }
             }
+            // La pantalla no se apaga mientras se escucha, traduce o lee.
+            .onChange(of: viewModel.phase) { _, newPhase in
+                UIApplication.shared.isIdleTimerDisabled = newPhase != .idle || showsFaceToFace
+            }
             .alert("Aviso", isPresented: errorBinding) {
                 if viewModel.errorOffersSettings {
                     Button("Abrir Ajustes") {
