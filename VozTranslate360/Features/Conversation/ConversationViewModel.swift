@@ -33,12 +33,16 @@ final class ConversationViewModel {
     private(set) var phase: Phase = .idle
     private(set) var liveTranscript = ""
     var errorMessage: String?
+    /// El error se resuelve cambiando un permiso en Ajustes de iOS.
+    var errorOffersSettings = false
 
     // MARK: Dependencias
 
     private let dependencies: AppDependencies
     private let settings: AppSettings
     @ObservationIgnored private var workTask: Task<Void, Never>?
+    /// Se pulsó «terminar frase» mientras el micrófono aún arrancaba.
+    @ObservationIgnored private var stopRequested = false
 
     init(dependencies: AppDependencies, settings: AppSettings) {
         self.dependencies = dependencies
@@ -84,6 +88,7 @@ final class ConversationViewModel {
     /// Pulsar el micrófono: empieza a escuchar o termina la frase.
     func toggleListening(for speaker: Speaker) {
         if isListening(speaker) {
+            stopRequested = true
             dependencies.recognizer.stopRecognition()
             return
         }
@@ -112,6 +117,7 @@ final class ConversationViewModel {
     func stopAll() {
         workTask?.cancel()
         workTask = nil
+        stopRequested = false
         dependencies.recognizer.stopRecognition()
         dependencies.synthesizer.stopSpeaking()
         liveTranscript = ""
@@ -170,21 +176,28 @@ final class ConversationViewModel {
         let from = languages(for: speaker).from
         let mode = settings.processingMode
         liveTranscript = ""
+        stopRequested = false
         phase = .listening(speaker)
 
         workTask = Task {
             var finalText = ""
             do {
-                let stream = dependencies.recognizer.startRecognition(language: from, mode: mode)
+                // Puede tardar: la primera vez iOS pide los permisos.
+                let stream = try await dependencies.recognizer.startRecognition(language: from, mode: mode)
+                if Task.isCancelled {
+                    dependencies.recognizer.stopRecognition()
+                    return
+                }
+                if stopRequested {
+                    dependencies.recognizer.stopRecognition()
+                }
                 for try await update in stream {
                     liveTranscript = update.text
                     if update.isFinal { finalText = update.text }
                 }
             } catch {
                 guard !Task.isCancelled else { return }
-                errorMessage = error.localizedDescription
-                liveTranscript = ""
-                phase = .idle
+                report(error)
                 return
             }
             if finalText.isEmpty { finalText = liveTranscript }
@@ -231,9 +244,15 @@ final class ConversationViewModel {
             // Cancelado por stopAll(): el estado ya está restablecido.
         } catch {
             guard !Task.isCancelled else { return }
-            errorMessage = error.localizedDescription
-            liveTranscript = ""
-            phase = .idle
+            report(error)
         }
+    }
+
+    /// Muestra el error al usuario y vuelve a reposo.
+    private func report(_ error: Error) {
+        errorMessage = error.localizedDescription
+        errorOffersSettings = (error as? SpeechServiceError)?.requiresSettings ?? false
+        liveTranscript = ""
+        phase = .idle
     }
 }

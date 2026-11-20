@@ -70,7 +70,7 @@ final class MockSpeechRecognizer: SpeechRecognitionProviding {
 
     func requestAuthorization() async -> PermissionStatus { .authorized }
 
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) -> AsyncThrowingStream<RecognitionUpdate, Error> {
+    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         cancelCurrent()
 
         let (stream, continuation) = AsyncThrowingStream<RecognitionUpdate, Error>.makeStream()

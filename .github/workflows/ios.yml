@@ -10,7 +10,7 @@ name: iOS
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'fase-*']
   pull_request:
   workflow_dispatch:
 
@@ -76,7 +76,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             > "$LOG" 2>&1 && STATUS=0 || STATUS=$?
           echo "::group::Errores, avisos y pruebas"
-          grep -E "error:|warning:|Test |passed|failed|DISPONIBILIDAD|\*\* " "$LOG" | sort -u | head -400 || true
+          grep -E "error:|warning:|Test |passed|failed|DISPONIBILIDAD|DICTADO|VOZ |\*\* " "$LOG" | sort -u | head -400 || true
           echo "::endgroup::"
           if [ "$STATUS" -ne 0 ]; then tail -120 "$LOG"; fi
           exit "$STATUS"

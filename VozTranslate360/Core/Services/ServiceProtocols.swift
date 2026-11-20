@@ -9,8 +9,8 @@
 //  Implementaciones:
 //  • TranslationProviding          → Translation framework       (Fase 2 ✔)
 //  • LanguageAvailabilityChecking  → Translation.LanguageAvailability (Fase 2 ✔)
-//  • SpeechRecognitionProviding    → Speech + AVAudioEngine      (Fase 3)
-//  • SpeechSynthesizing            → AVSpeechSynthesizer         (Fase 3)
+//  • SpeechRecognitionProviding    → Speech + AVAudioEngine      (Fase 3 ✔)
+//  • SpeechSynthesizing            → AVSpeechSynthesizer         (Fase 3 ✔)
 //  • ConnectivityMonitoring        → Network (NWPathMonitor)     (Fase 5)
 //
 
@@ -88,6 +88,51 @@ nonisolated enum TranslationPolicy {
     }
 }
 
+nonisolated enum SpeechServiceError: LocalizedError, Equatable {
+    case permissionDenied
+    case recognizerUnavailable(AppLanguage)
+    case onDeviceUnavailable(AppLanguage)
+    case audioUnavailable
+    case recognitionFailed(String)
+
+    /// El usuario debe cambiar un permiso en la app Ajustes de iOS.
+    var requiresSettings: Bool { self == .permissionDenied }
+
+    var errorDescription: String? {
+        switch self {
+        case .permissionDenied:
+            "VozTranslate 360 necesita permiso para usar el micrófono y el reconocimiento de voz. Actívalos en Ajustes."
+        case let .recognizerUnavailable(language):
+            "El dictado en \(language.displayName) no está disponible ahora. Comprueba la conexión o escribe el texto."
+        case let .onDeviceUnavailable(language):
+            "El dictado sin conexión en \(language.displayName) no está disponible en este iPhone. Usa el modo «Automático» con conexión o escribe el texto."
+        case .audioUnavailable:
+            "No se pudo acceder al micrófono. Cierra otras apps que lo estén usando e inténtalo de nuevo."
+        case let .recognitionFailed(reason):
+            "No se pudo reconocer la voz. \(reason)"
+        }
+    }
+}
+
+/// Decide si el dictado se hace en el iPhone o en los servidores de Apple.
+nonisolated enum SpeechPolicy {
+    /// - Returns: `true` si debe exigirse el reconocimiento en el dispositivo.
+    static func requiresOnDevice(mode: ProcessingMode,
+                                 supportsOnDevice: Bool,
+                                 language: AppLanguage) throws -> Bool {
+        switch mode {
+        case .offline:
+            guard supportsOnDevice else { throw SpeechServiceError.onDeviceUnavailable(language) }
+            return true
+        case .automatic:
+            // Prioriza lo local; si el idioma no lo admite, usa el servidor.
+            return supportsOnDevice
+        case .online:
+            return false
+        }
+    }
+}
+
 // MARK: - Protocolos
 
 @MainActor
@@ -108,9 +153,10 @@ protocol SpeechRecognitionProviding: AnyObject {
     /// Pide permisos de micrófono y reconocimiento de voz.
     func requestAuthorization() async -> PermissionStatus
 
-    /// Inicia la escucha. El flujo emite resultados parciales y termina
-    /// con uno final cuando se llama a `stopRecognition()`.
-    func startRecognition(language: AppLanguage, mode: ProcessingMode) -> AsyncThrowingStream<RecognitionUpdate, Error>
+    /// Pide permisos si hace falta e inicia la escucha. El flujo emite
+    /// resultados parciales y termina con uno final cuando se llama a
+    /// `stopRecognition()`. El audio nunca se guarda.
+    func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error>
 
     /// Detiene la escucha y cierra el flujo con el último texto.
     func stopRecognition()
