@@ -76,7 +76,7 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             > "$LOG" 2>&1 && STATUS=0 || STATUS=$?
           echo "::group::Errores, avisos y pruebas"
-          grep -E "error:|warning:|Test |passed|failed|\*\* " "$LOG" | sort -u | head -400 || true
+          grep -E "error:|warning:|Test |passed|failed|DISPONIBILIDAD|\*\* " "$LOG" | sort -u | head -400 || true
           echo "::endgroup::"
           if [ "$STATUS" -ne 0 ]; then tail -120 "$LOG"; fi
           exit "$STATUS"
@@ -101,11 +101,12 @@ jobs:
 
           for mode in light dark; do
             xcrun simctl ui "$UDID" appearance "$mode"
-            shoot "$mode-1-inicio"        5 -tab traducir
+            shoot "$mode-1-inicio"        5 -mock -tab traducir
             shoot "$mode-2-conversacion"  5 -demo -tab traducir
             shoot "$mode-3-escuchando"    2 -demo -demo-listen -tab traducir
             shoot "$mode-4-historial"     5 -demo -tab historial
-            shoot "$mode-5-ajustes"       5 -tab ajustes
+            shoot "$mode-5-ajustes"       5 -mock -tab ajustes
+            shoot "$mode-6-idiomas"       5 -demo -demo-picker -tab traducir
           done
           ls -la screenshots
 

@@ -30,6 +30,8 @@ struct RootView: View {
                 SettingsView()
             }
         }
+        // Conexión con Apple Translation: siempre presente en la jerarquía.
+        .background { TranslationSessionHost() }
     }
 }
 

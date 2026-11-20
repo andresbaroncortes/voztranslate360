@@ -6,8 +6,10 @@
 //  Lo usa la integración continua para generar capturas de pantalla.
 //
 //  Argumentos de lanzamiento:
-//    -demo                          Carga una conversación y un historial de ejemplo.
-//    -demo-listen                   Empieza a «escuchar» al abrir la app.
+//    -mock                            Usa servicios simulados (sin datos de ejemplo).
+//    -demo                            Servicios simulados + conversación e historial de ejemplo.
+//    -demo-listen                     Empieza a «escuchar» al abrir la app.
+//    -demo-picker                     Abre el selector de idioma de destino.
 //    -tab traducir|historial|ajustes  Pestaña inicial.
 //
 //  En la versión Release todas las propiedades devuelven el valor normal.
@@ -19,21 +21,18 @@ nonisolated enum DemoMode {
 
     private static var arguments: [String] { ProcessInfo.processInfo.arguments }
 
-    static var isEnabled: Bool {
+    private static func has(_ flag: String) -> Bool {
         #if DEBUG
-        return arguments.contains("-demo")
+        return arguments.contains(flag)
         #else
         return false
         #endif
     }
 
-    static var startsListening: Bool {
-        #if DEBUG
-        return arguments.contains("-demo-listen")
-        #else
-        return false
-        #endif
-    }
+    static var isEnabled: Bool { has("-demo") }
+    static var usesMockServices: Bool { has("-demo") || has("-mock") }
+    static var startsListening: Bool { has("-demo-listen") }
+    static var opensLanguagePicker: Bool { has("-demo-picker") }
 
     static var initialTab: AppTab {
         #if DEBUG

@@ -2,22 +2,51 @@
 //  MockServices.swift
 //  VozTranslate 360 — Atlas Business
 //
-//  Servicios SIMULADOS de la Fase 1. Permiten probar toda la interfaz en el
-//  simulador sin micrófono, sin permisos y sin modelos de idioma.
-//  Se reemplazarán por implementaciones reales en las Fases 2, 3 y 5.
+//  Servicios SIMULADOS. Se usan en las pruebas automáticas, en las capturas
+//  (modo demostración) y, hasta la Fase 3, para el dictado y la voz.
 //
 
 import Foundation
 import Observation
+
+// MARK: - Disponibilidad simulada
+
+@MainActor
+final class MockLanguageAvailability: LanguageAvailabilityChecking {
+    /// Estado forzado por idioma (si aparece como origen o destino).
+    /// Lo que no esté aquí se considera instalado.
+    var overrides: [AppLanguage: PairAvailability]
+
+    init(overrides: [AppLanguage: PairAvailability] = [:]) {
+        self.overrides = overrides
+    }
+
+    func availability(from source: AppLanguage, to target: AppLanguage) async -> PairAvailability {
+        overrides[source] ?? overrides[target] ?? .installed
+    }
+}
 
 // MARK: - Traducción simulada
 
 @MainActor
 final class MockTranslationService: TranslationProviding {
 
-    func translate(_ text: String, from source: AppLanguage, to target: AppLanguage) async throws -> TranslationResult {
+    private let availability: any LanguageAvailabilityChecking
+
+    init(availability: any LanguageAvailabilityChecking = MockLanguageAvailability()) {
+        self.availability = availability
+    }
+
+    func translate(_ text: String,
+                   from source: AppLanguage,
+                   to target: AppLanguage,
+                   mode: ProcessingMode) async throws -> TranslationResult {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { throw TranslationServiceError.emptyText }
+
+        // Mismas reglas que el servicio real.
+        let status = await availability.availability(from: source, to: target)
+        try TranslationPolicy.validate(status, from: source, to: target, mode: mode)
 
         // Simula el tiempo de inferencia del modelo local.
         try await Task.sleep(for: .milliseconds(450))

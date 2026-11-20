@@ -2,7 +2,7 @@
 //  ConversationViewModel.swift
 //  VozTranslate 360 — Atlas Business
 //
-//  Orquesta el flujo: escuchar → reconocer → traducir → leer en voz alta.
+//  Orquesta el flujo: escuchar (o escribir) → traducir → leer en voz alta.
 //  Solo conoce los protocolos de servicio, nunca los frameworks de Apple.
 //
 
@@ -88,8 +88,25 @@ final class ConversationViewModel {
             return
         }
         guard phase == .idle else { return }
-        startPipeline(for: speaker)
+        startListening(for: speaker)
     }
+
+    // MARK: Texto escrito
+
+    var canTranslateTypedText: Bool { phase == .idle }
+
+    /// Traduce un texto escrito por el usuario (idioma de origen → destino).
+    func translateTyped(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty, phase == .idle else { return }
+        liveTranscript = trimmed
+        phase = .translating(.me)
+        workTask = Task {
+            await translateAndSpeak(trimmed, speaker: .me)
+        }
+    }
+
+    // MARK: Control
 
     /// Detiene TODO de inmediato: escucha, traducción y voz.
     func stopAll() {
@@ -149,62 +166,74 @@ final class ConversationViewModel {
         }
     }
 
-    private func startPipeline(for speaker: Speaker) {
-        let (from, to) = languages(for: speaker)
+    private func startListening(for speaker: Speaker) {
+        let from = languages(for: speaker).from
         let mode = settings.processingMode
         liveTranscript = ""
         phase = .listening(speaker)
 
         workTask = Task {
+            var finalText = ""
             do {
-                // 1. Escuchar
-                var finalText = ""
                 let stream = dependencies.recognizer.startRecognition(language: from, mode: mode)
                 for try await update in stream {
                     liveTranscript = update.text
                     if update.isFinal { finalText = update.text }
                 }
-                if finalText.isEmpty { finalText = liveTranscript }
-
-                // Si se pulsó «Detener», stopAll() ya restableció el estado.
-                guard !Task.isCancelled else { return }
-
-                let text = finalText.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !text.isEmpty else {
-                    phase = .idle
-                    return
-                }
-
-                // 2. Traducir
-                phase = .translating(speaker)
-                let result = try await dependencies.translator.translate(text, from: from, to: to)
-                guard !Task.isCancelled else { return }
-
-                turns.append(ConversationTurn(
-                    speaker: speaker,
-                    sourceLanguage: from,
-                    targetLanguage: to,
-                    originalText: text,
-                    translatedText: result.text,
-                    processedOnDevice: result.processedOnDevice
-                ))
-                liveTranscript = ""
-
-                // 3. Leer en voz alta
-                if settings.autoSpeak {
-                    phase = .speaking
-                    await dependencies.synthesizer.speak(result.text, language: to, rate: settings.speechRate)
-                    guard !Task.isCancelled else { return }
-                }
-                phase = .idle
-            } catch is CancellationError {
-                // Cancelado por stopAll(): el estado ya está restablecido.
             } catch {
                 guard !Task.isCancelled else { return }
                 errorMessage = error.localizedDescription
                 liveTranscript = ""
                 phase = .idle
+                return
             }
+            if finalText.isEmpty { finalText = liveTranscript }
+
+            // Si se pulsó «Detener», stopAll() ya restableció el estado.
+            guard !Task.isCancelled else { return }
+
+            let text = finalText.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !text.isEmpty else {
+                phase = .idle
+                return
+            }
+            await translateAndSpeak(text, speaker: speaker)
+        }
+    }
+
+    /// Traduce, agrega el turno y lo lee en voz alta. Común a voz y texto.
+    private func translateAndSpeak(_ text: String, speaker: Speaker) async {
+        let (from, to) = languages(for: speaker)
+        do {
+            phase = .translating(speaker)
+            let result = try await dependencies.translator.translate(
+                text, from: from, to: to, mode: settings.processingMode
+            )
+            guard !Task.isCancelled else { return }
+
+            turns.append(ConversationTurn(
+                speaker: speaker,
+                sourceLanguage: from,
+                targetLanguage: to,
+                originalText: text,
+                translatedText: result.text,
+                processedOnDevice: result.processedOnDevice
+            ))
+            liveTranscript = ""
+
+            if settings.autoSpeak {
+                phase = .speaking
+                await dependencies.synthesizer.speak(result.text, language: to, rate: settings.speechRate)
+                guard !Task.isCancelled else { return }
+            }
+            phase = .idle
+        } catch is CancellationError {
+            // Cancelado por stopAll(): el estado ya está restablecido.
+        } catch {
+            guard !Task.isCancelled else { return }
+            errorMessage = error.localizedDescription
+            liveTranscript = ""
+            phase = .idle
         }
     }
 }

@@ -14,6 +14,7 @@ struct ConversationView: View {
     @Environment(AppDependencies.self) private var dependencies
 
     @State private var pickerSide: ConversationViewModel.LanguageSide?
+    @State private var draft = ""
 
     var body: some View {
         NavigationStack {
@@ -42,6 +43,15 @@ struct ConversationView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
 
+                TextComposer(
+                    text: $draft,
+                    language: viewModel.sourceLanguage,
+                    isEnabled: viewModel.canTranslateTypedText
+                ) {
+                    viewModel.translateTyped(draft)
+                    draft = ""
+                }
+
                 microphoneControls
             }
             .padding(.horizontal)
@@ -60,8 +70,10 @@ struct ConversationView: View {
             }
             .sheet(item: $pickerSide) { side in
                 LanguagePickerSheet(
-                    title: side == .source ? "Yo hablo" : "Traducir a",
-                    selected: side == .source ? viewModel.sourceLanguage : viewModel.targetLanguage
+                    side: side,
+                    selected: side == .source ? viewModel.sourceLanguage : viewModel.targetLanguage,
+                    counterpart: side == .source ? viewModel.targetLanguage : viewModel.sourceLanguage,
+                    checker: dependencies.availability
                 ) { language in
                     viewModel.select(language, for: side)
                 }
@@ -70,6 +82,9 @@ struct ConversationView: View {
                 #if DEBUG
                 if DemoMode.startsListening && viewModel.phase == .idle {
                     viewModel.toggleListening(for: .me)
+                }
+                if DemoMode.opensLanguagePicker {
+                    pickerSide = .target
                 }
                 #endif
             }
