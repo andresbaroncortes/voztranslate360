@@ -129,3 +129,21 @@ Se configuran en la Fase 1, aunque se usarán en la Fase 3:
 - `NSSpeechRecognitionUsageDescription`
 
 No se piden permisos de ubicación, contactos ni red local.
+
+## 9. Fase 2 — Traducción real
+
+**Servicios nuevos** (`Services/Translation/`):
+- `AppleLanguageAvailabilityService`: `LanguageAvailability().status(from:to:)` → `.installed` (sin conexión) / `.supported` (requiere descarga) / `.unsupported`.
+- `AppleTranslationService`: cola de peticiones. Publica una `TranslationSession.Configuration` por par de idiomas; la vista invisible `TranslationSessionHost` (en `RootView`) ejecuta `.translationTask`, y su sesión atiende la cola con `session.translate(_:)`. Para el mismo par se usa `configuration.invalidate()`.
+
+**Reglas** (`TranslationPolicy`, compartidas por el servicio real y el simulado):
+
+| Estado del par | Automático / En línea | Sin conexión |
+|---|---|---|
+| Instalado | Traduce en el iPhone | Traduce en el iPhone |
+| Requiere descarga | iOS ofrece la descarga y luego traduce | **Aviso**, sin intentar descargar |
+| No admitido | Aviso | Aviso |
+
+**Decisión:** antes de traducir siempre se consulta a iOS el estado del par. El selector de idiomas muestra ese estado para cada idioma frente al del otro lado.
+
+**Pendiente para la Fase 5:** conectividad real (`NWPathMonitor`), pantalla de gestión de descargas (`prepareTranslation()`) y aviso anticipado cuando se necesita una descarga sin red.

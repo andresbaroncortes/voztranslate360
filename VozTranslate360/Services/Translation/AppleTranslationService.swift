@@ -10,9 +10,13 @@
 //   1. Encola cada petición y publica una `TranslationSession.Configuration`
 //      para el par de idiomas.
 //   2. La vista invisible `TranslationSessionHost` (en RootView) observa esa
-//      configuración; SwiftUI ejecuta `.translationTask` y entrega la sesión
-//      a `run(_:)`.
-//   3. `run(_:)` atiende la cola de ese par y devuelve cada resultado.
+//      configuración; SwiftUI ejecuta `.translationTask` y entrega la sesión.
+//   3. `serve(_:service:)` atiende la cola de ese par.
+//
+//  Concurrencia: la sesión NO es Sendable. Por eso se usa solo dentro de
+//  `serve`, que es `nonisolated` (fuera del hilo principal); con el servicio
+//  (@MainActor) solo se intercambian textos y resultados (Sendable).
+//
 //  Si el par necesita modelos que no están instalados, iOS muestra su propia
 //  hoja de descarga (solo en modo Automático/En línea; en «Sin conexión» se
 //  avisa antes, sin intentar descargar).
@@ -33,15 +37,23 @@ final class AppleTranslationService: TranslationProviding {
     }
 
     private struct PendingRequest {
+        let id: UUID
         let text: String
         let pair: LanguagePair
         let continuation: CheckedContinuation<String, Error>
+    }
+
+    /// Trabajo que se entrega a la sesión: solo datos Sendable.
+    nonisolated struct Job: Sendable {
+        let id: UUID
+        let text: String
     }
 
     /// Configuración que observa `TranslationSessionHost`.
     private(set) var configuration: TranslationSession.Configuration?
 
     @ObservationIgnored private var queue: [PendingRequest] = []
+    @ObservationIgnored private var inFlight: [UUID: PendingRequest] = [:]
     @ObservationIgnored private var activePair: LanguagePair?
     @ObservationIgnored private var isSessionRequested = false
     @ObservationIgnored private var isSessionRunning = false
@@ -69,13 +81,13 @@ final class AppleTranslationService: TranslationProviding {
         // 2. Encolar y esperar a que la sesión la atienda.
         let pair = LanguagePair(source: source, target: target)
         let translated = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-            queue.append(PendingRequest(text: trimmed, pair: pair, continuation: continuation))
+            queue.append(PendingRequest(id: UUID(), text: trimmed, pair: pair, continuation: continuation))
             requestSessionIfNeeded()
         }
         return TranslationResult(text: translated, processedOnDevice: true)
     }
 
-    // MARK: Sesión
+    // MARK: Cola (hilo principal)
 
     /// Pide a SwiftUI una sesión para el primer par pendiente.
     private func requestSessionIfNeeded() {
@@ -94,27 +106,58 @@ final class AppleTranslationService: TranslationProviding {
         }
     }
 
-    /// Lo llama `.translationTask` con una sesión para `activePair`.
-    func run(_ session: TranslationSession) async {
+    fileprivate func sessionDidStart() {
         isSessionRequested = false
         isSessionRunning = true
-        defer {
-            isSessionRunning = false
-            // Si quedaron peticiones de otro par, se pide otra sesión.
-            requestSessionIfNeeded()
-        }
+    }
 
-        while let index = queue.firstIndex(where: { $0.pair == activePair }) {
-            let request = queue.remove(at: index)
+    /// Siguiente petición del par activo, o `nil` si no queda ninguna.
+    fileprivate func nextJob() -> Job? {
+        guard let index = queue.firstIndex(where: { $0.pair == activePair }) else { return nil }
+        let request = queue.remove(at: index)
+        inFlight[request.id] = request
+        return Job(id: request.id, text: request.text)
+    }
+
+    fileprivate func complete(_ id: UUID, with result: Result<String, Error>) {
+        guard let request = inFlight.removeValue(forKey: id) else { return }
+        switch result {
+        case .success(let text):
+            request.continuation.resume(returning: text)
+        case .failure(let error):
+            request.continuation.resume(
+                throwing: TranslationServiceError.translationFailed(error.localizedDescription)
+            )
+        }
+    }
+
+    fileprivate func sessionDidEnd() {
+        isSessionRunning = false
+        // Si quedaron peticiones de otro par, se pide otra sesión.
+        requestSessionIfNeeded()
+    }
+
+    // MARK: Sesión (fuera del hilo principal)
+
+    /// Acción para `.translationTask`. Se crea en un contexto `nonisolated`
+    /// para que la sesión no cruce al hilo principal.
+    nonisolated static func sessionAction(for service: AppleTranslationService) -> @Sendable (TranslationSession) async -> Void {
+        { session in
+            await serve(session, service: service)
+        }
+    }
+
+    nonisolated private static func serve(_ session: TranslationSession, service: AppleTranslationService) async {
+        await service.sessionDidStart()
+        while !Task.isCancelled, let job = await service.nextJob() {
             do {
-                let response = try await session.translate(request.text)
-                request.continuation.resume(returning: response.targetText)
+                let response = try await session.translate(job.text)
+                await service.complete(job.id, with: .success(response.targetText))
             } catch {
-                request.continuation.resume(
-                    throwing: TranslationServiceError.translationFailed(error.localizedDescription)
-                )
+                await service.complete(job.id, with: .failure(error))
             }
         }
+        await service.sessionDidEnd()
     }
 }
 
@@ -139,9 +182,8 @@ struct TranslationSessionHost: View {
                 .frame(width: 1, height: 1)
                 .allowsHitTesting(false)
                 .accessibilityHidden(true)
-                .translationTask(service.configuration) { session in
-                    await service.run(session)
-                }
+                .translationTask(service.configuration,
+                                 action: AppleTranslationService.sessionAction(for: service))
         }
     }
 }

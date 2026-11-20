@@ -11,8 +11,8 @@ Desarrollado por **Atlas Business**.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 1 | Arquitectura, carpetas y diseño SwiftUI (servicios simulados) | **En validación** |
-| 2 | Selección de idiomas y traducción de texto | Pendiente |
+| 1 | Arquitectura, carpetas y diseño SwiftUI (servicios simulados) | ✅ Aprobada (2026-11-20) |
+| 2 | Selección de idiomas y traducción de texto (Apple Translation real) | **En validación** |
 | 3 | Reconocimiento de voz y lectura de traducciones | Pendiente |
 | 4 | Traducción bidireccional | Pendiente |
 | 5 | Recursos offline y conectividad | Pendiente |
@@ -58,3 +58,20 @@ La Fase 1 usa servicios **simulados**: no usa el micrófono ni traduce de verdad
 - [ ] Las versiones oscuras (`dark-*`) se leen bien.
 
 **En el iPhone (opcional en la Fase 1):** instala el `.ipa` con Sideloadly y repite el recorrido a mano.
+
+## Fase 2 — Lista de comprobación
+
+**Qué cambia:** la traducción ya es **real** (Apple Translation, en el iPhone). El dictado y la voz siguen simulados hasta la Fase 3: al pulsar el micrófono «se oye» la frase de ejemplo, pero su traducción es real.
+
+**Automática (GitHub Actions):**
+- [ ] Compila sin errores ni avisos y pasan las pruebas (Fase 1 + `Fase2TranslationTests`).
+- [ ] El registro muestra las líneas `DISPONIBILIDAD …` con la matriz real que informa iOS (en el simulador puede diferir del iPhone).
+- [ ] Captura `6-idiomas`: selector con estados (en las capturas los estados son **simulados**).
+
+**En el iPhone (Translation no funciona en el simulador):**
+1. Instala el `.ipa` con Sideloadly ([docs/COMPILAR_SIN_MAC.md](docs/COMPILAR_SIN_MAC.md)).
+2. Abre «Traducir a»: cada idioma muestra **Sin conexión**, **Requiere descarga** o **No disponible**, según tu iPhone.
+3. Con conexión y modo **Automático**, escribe «¿Dónde está el baño?» y pulsa ↑. Si el par no está descargado, iOS muestra su hoja de descarga; acepta. Debe aparecer la traducción real.
+4. Activa el **modo avión**, cambia el modo a **Sin conexión** y traduce otra frase con el mismo par: debe funcionar sin internet.
+5. Con modo **Sin conexión**, elige un par marcado «Requiere descarga» y traduce: debe aparecer un aviso claro (sin intentar descargar).
+6. Prueba los seis idiomas en ambos sentidos con ⇄ y anota cuáles quedan «Sin conexión».

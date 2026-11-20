@@ -186,7 +186,7 @@ struct AppSettingsTests {
     @Test func traduccionSimuladaRechazaTextoVacio() async {
         let service = MockTranslationService()
         await #expect(throws: TranslationServiceError.emptyText) {
-            _ = try await service.translate("   ", from: .spanish, to: .english)
+            _ = try await service.translate("   ", from: .spanish, to: .english, mode: .automatic)
         }
     }
 
