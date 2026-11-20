@@ -12,8 +12,8 @@ Desarrollado por **Atlas Business**.
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1 | Arquitectura, carpetas y diseño SwiftUI (servicios simulados) | ✅ Aprobada (2026-11-20) |
-| 2 | Selección de idiomas y traducción de texto (Apple Translation real) | **En validación** |
-| 3 | Reconocimiento de voz y lectura de traducciones | En desarrollo (rama `fase-3`) |
+| 2 | Selección de idiomas y traducción de texto (Apple Translation real) | ✅ Aprobada (2026-11-20) |
+| 3 | Reconocimiento de voz y lectura de traducciones | ✅ Aprobada (2026-11-20) |
 | 4 | Traducción bidireccional | En desarrollo (rama `fase-4`) |
 | 5 | Recursos offline y conectividad | Pendiente |
 | 6 | Historial, ajustes y optimización | Pendiente |
