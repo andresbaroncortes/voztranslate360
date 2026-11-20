@@ -24,7 +24,8 @@ final class AppleSpeechSynthesizer: NSObject, SpeechSynthesizing {
     }
 
     func availableVoices(for language: AppLanguage) -> [VoiceOption] {
-        VoiceRanking.candidates(among: VoiceSelector.installedVoices(), for: language)
+        VoiceRanking.candidates(among: VoiceSelector.installedVoices(), for: language,
+                                defaultIdentifier: VoiceSelector.systemDefaultIdentifier(for: language))
     }
 
     func speak(_ text: String, language: AppLanguage, rate: Double, voiceIdentifier: String?) async {
@@ -99,6 +100,12 @@ nonisolated enum VoiceSelector {
             }
     }
 
+    /// Voz que iOS usa por defecto para el idioma (suele ser la más natural
+    /// entre las estándar, p. ej. Samantha en inglés).
+    static func systemDefaultIdentifier(for language: AppLanguage) -> String? {
+        AVSpeechSynthesisVoice(language: language.voiceLanguageCode)?.identifier
+    }
+
     /// Voz elegida (si sigue instalada y es del idioma) o la mejor disponible.
     static func bestVoice(for language: AppLanguage, preferredIdentifier: String? = nil) -> AVSpeechSynthesisVoice? {
         let prefix = String(language.voiceLanguageCode.prefix(2))
@@ -107,7 +114,8 @@ nonisolated enum VoiceSelector {
            chosen.language.hasPrefix(prefix) {
             return chosen
         }
-        if let best = VoiceRanking.best(among: installedVoices(), for: language),
+        if let best = VoiceRanking.best(among: installedVoices(), for: language,
+                                        defaultIdentifier: systemDefaultIdentifier(for: language)),
            let voice = AVSpeechSynthesisVoice(identifier: best.id) {
             return voice
         }
