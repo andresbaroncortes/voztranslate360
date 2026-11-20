@@ -42,6 +42,27 @@ struct Fase4VoiceTests {
         #expect(VoiceRanking.best(among: voices, for: .spanish)?.id == "es-ES.enh")
     }
 
+    @Test func lasVocesAntiguasVanAlFinal() {
+        let list = [
+            VoiceOption(id: "com.apple.speech.synthesis.voice.Fred", name: "Fred", languageCode: "en-US", quality: .standard),
+            VoiceOption(id: "com.apple.eloquence.en-US.Reed", name: "Reed", languageCode: "en-US", quality: .standard),
+            VoiceOption(id: "com.apple.voice.compact.en-US.Samantha", name: "Samantha", languageCode: "en-US", quality: .standard)
+        ]
+        #expect(VoiceRanking.best(among: list, for: .english)?.name == "Samantha")
+        #expect(VoiceRanking.candidates(among: list, for: .english).last?.isLegacy == true)
+    }
+
+    @Test func aIgualCalidadGanaLaVozPorDefectoDeIOS() {
+        let list = [
+            VoiceOption(id: "a", name: "Aaron", languageCode: "en-US", quality: .standard),
+            VoiceOption(id: "s", name: "Samantha", languageCode: "en-US", quality: .standard)
+        ]
+        #expect(VoiceRanking.best(among: list, for: .english, defaultIdentifier: "s")?.name == "Samantha")
+        // Pero una voz mejorada sigue ganando a la de por defecto.
+        let better = list + [VoiceOption(id: "e", name: "Evan", languageCode: "en-US", quality: .enhanced)]
+        #expect(VoiceRanking.best(among: better, for: .english, defaultIdentifier: "s")?.name == "Evan")
+    }
+
     @Test func soloVocesDelIdioma() {
         let spanish = VoiceRanking.candidates(among: voices, for: .spanish)
         #expect(spanish.count == 3)
@@ -84,7 +105,8 @@ struct Fase4VoiceTests {
     @Test func vocesRealesInstaladas() {
         let installed = VoiceSelector.installedVoices()
         for language in AppLanguage.allCases {
-            let list = VoiceRanking.candidates(among: installed, for: language)
+            let list = VoiceRanking.candidates(among: installed, for: language,
+                                               defaultIdentifier: VoiceSelector.systemDefaultIdentifier(for: language))
             let summary = list.prefix(4).map { "\($0.name)[\($0.languageCode)] \($0.quality.label)" }
             print("VOZ \(language.voiceLanguageCode): \(list.count) voces → \(summary.joined(separator: ", "))")
         }
