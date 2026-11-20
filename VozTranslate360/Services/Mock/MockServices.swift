@@ -32,9 +32,27 @@ final class MockLanguageAvailability: LanguageAvailabilityChecking {
 final class MockTranslationService: TranslationProviding {
 
     private let availability: any LanguageAvailabilityChecking
+    private let connectivity: any ConnectivityMonitoring
 
-    init(availability: any LanguageAvailabilityChecking = MockLanguageAvailability()) {
+    init(availability: any LanguageAvailabilityChecking = MockLanguageAvailability(),
+         connectivity: any ConnectivityMonitoring = MockConnectivityMonitor()) {
         self.availability = availability
+        self.connectivity = connectivity
+    }
+
+    /// Simula la descarga: el par pasa a «instalado».
+    func prepare(from source: AppLanguage, to target: AppLanguage) async throws {
+        let status = await availability.availability(from: source, to: target)
+        if status == .unsupported { throw TranslationServiceError.unsupportedPair(source, target) }
+        guard status == .needsDownload else { return }
+        guard connectivity.isConnected else {
+            throw TranslationServiceError.downloadRequiresConnection(source, target)
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        if let mock = availability as? MockLanguageAvailability {
+            mock.overrides[source] = nil
+            mock.overrides[target] = nil
+        }
     }
 
     func translate(_ text: String,
@@ -46,7 +64,8 @@ final class MockTranslationService: TranslationProviding {
 
         // Mismas reglas que el servicio real.
         let status = await availability.availability(from: source, to: target)
-        try TranslationPolicy.validate(status, from: source, to: target, mode: mode)
+        try TranslationPolicy.validate(status, from: source, to: target, mode: mode,
+                                       isConnected: connectivity.isConnected)
 
         // Simula el tiempo de inferencia del modelo local.
         try await Task.sleep(for: .milliseconds(450))
@@ -69,6 +88,13 @@ final class MockSpeechRecognizer: SpeechRecognitionProviding {
     private var partialText = ""
 
     func requestAuthorization() async -> PermissionStatus { .authorized }
+
+    /// Idiomas sin dictado local simulados (para pruebas y capturas).
+    var languagesWithoutOnDevice: Set<AppLanguage> = []
+
+    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool {
+        !languagesWithoutOnDevice.contains(language)
+    }
 
     func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         cancelCurrent()

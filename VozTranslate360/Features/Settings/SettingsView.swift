@@ -11,6 +11,7 @@ import UIKit
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(\.openURL) private var openURL
+    @State private var showsOfflineResources = DemoMode.opensOfflineResources
 
     var body: some View {
         @Bindable var settings = settings
@@ -30,10 +31,21 @@ struct SettingsView: View {
                     Text(settings.processingMode.explanation)
                 }
 
-                Section("Idiomas sin conexión") {
-                    LabeledContent("Gestionar idiomas descargados") {
-                        Text("Fase 5").foregroundStyle(.secondary)
+                Section {
+                    Button {
+                        showsOfflineResources = true
+                    } label: {
+                        HStack {
+                            Label("Idiomas sin conexión", systemImage: "arrow.down.circle")
+                                .foregroundStyle(.primary)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
+                        }
                     }
+                } footer: {
+                    Text("Comprueba y descarga lo necesario para traducir, dictar y leer sin internet.")
                 }
 
                 Section {
@@ -94,6 +106,9 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Ajustes")
+            .navigationDestination(isPresented: $showsOfflineResources) {
+                OfflineResourcesView()
+            }
         }
     }
 

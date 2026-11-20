@@ -36,9 +36,15 @@ final class AppleTranslationService: TranslationProviding {
         let target: AppLanguage
     }
 
+    /// Traducir un texto o solo preparar (descargar) el par.
+    nonisolated enum JobKind: Sendable {
+        case translate(String)
+        case prepare
+    }
+
     private struct PendingRequest {
         let id: UUID
-        let text: String
+        let kind: JobKind
         let pair: LanguagePair
         let continuation: CheckedContinuation<String, Error>
     }
@@ -46,7 +52,7 @@ final class AppleTranslationService: TranslationProviding {
     /// Trabajo que se entrega a la sesión: solo datos Sendable.
     nonisolated struct Job: Sendable {
         let id: UUID
-        let text: String
+        let kind: JobKind
     }
 
     /// Configuración que observa `TranslationSessionHost`.
@@ -59,9 +65,11 @@ final class AppleTranslationService: TranslationProviding {
     @ObservationIgnored private var isSessionRunning = false
 
     private let availability: any LanguageAvailabilityChecking
+    private let connectivity: any ConnectivityMonitoring
 
-    init(availability: any LanguageAvailabilityChecking) {
+    init(availability: any LanguageAvailabilityChecking, connectivity: any ConnectivityMonitoring) {
         self.availability = availability
+        self.connectivity = connectivity
     }
 
     // MARK: TranslationProviding
@@ -76,15 +84,36 @@ final class AppleTranslationService: TranslationProviding {
 
         // 1. Verificar con iOS antes de intentar nada.
         let status = await availability.availability(from: source, to: target)
-        try TranslationPolicy.validate(status, from: source, to: target, mode: mode)
+        try TranslationPolicy.validate(status, from: source, to: target, mode: mode,
+                                       isConnected: connectivity.isConnected)
 
         // 2. Encolar y esperar a que la sesión la atienda.
+        let translated = try await enqueue(.translate(trimmed), source: source, target: target)
+        return TranslationResult(text: translated, processedOnDevice: true)
+    }
+
+    func prepare(from source: AppLanguage, to target: AppLanguage) async throws {
+        guard source != target else { return }
+        let status = await availability.availability(from: source, to: target)
+        switch status {
+        case .installed:
+            return
+        case .unsupported:
+            throw TranslationServiceError.unsupportedPair(source, target)
+        case .needsDownload:
+            guard connectivity.isConnected else {
+                throw TranslationServiceError.downloadRequiresConnection(source, target)
+            }
+            _ = try await enqueue(.prepare, source: source, target: target)
+        }
+    }
+
+    private func enqueue(_ kind: JobKind, source: AppLanguage, target: AppLanguage) async throws -> String {
         let pair = LanguagePair(source: source, target: target)
-        let translated = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
-            queue.append(PendingRequest(id: UUID(), text: trimmed, pair: pair, continuation: continuation))
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<String, Error>) in
+            queue.append(PendingRequest(id: UUID(), kind: kind, pair: pair, continuation: continuation))
             requestSessionIfNeeded()
         }
-        return TranslationResult(text: translated, processedOnDevice: true)
     }
 
     // MARK: Cola (hilo principal)
@@ -116,7 +145,7 @@ final class AppleTranslationService: TranslationProviding {
         guard let index = queue.firstIndex(where: { $0.pair == activePair }) else { return nil }
         let request = queue.remove(at: index)
         inFlight[request.id] = request
-        return Job(id: request.id, text: request.text)
+        return Job(id: request.id, kind: request.kind)
     }
 
     fileprivate func complete(_ id: UUID, with result: Result<String, Error>) {
@@ -151,8 +180,15 @@ final class AppleTranslationService: TranslationProviding {
         await service.sessionDidStart()
         while !Task.isCancelled, let job = await service.nextJob() {
             do {
-                let response = try await session.translate(job.text)
-                await service.complete(job.id, with: .success(response.targetText))
+                switch job.kind {
+                case .translate(let text):
+                    let response = try await session.translate(text)
+                    await service.complete(job.id, with: .success(response.targetText))
+                case .prepare:
+                    // Muestra la hoja de descarga de iOS si faltan modelos.
+                    try await session.prepareTranslation()
+                    await service.complete(job.id, with: .success(""))
+                }
             } catch {
                 await service.complete(job.id, with: .failure(error))
             }

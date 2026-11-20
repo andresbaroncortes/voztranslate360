@@ -21,6 +21,8 @@ private final class ScriptedRecognizer: SpeechRecognitionProviding {
 
     init(partials: [String]) { self.partials = partials }
 
+    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool { true }
+
     func requestAuthorization() async -> PermissionStatus { .authorized }
 
     func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {

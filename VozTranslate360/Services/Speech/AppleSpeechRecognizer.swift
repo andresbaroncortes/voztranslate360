@@ -18,6 +18,15 @@ import Speech
 final class AppleSpeechRecognizer: SpeechRecognitionProviding {
 
     private var engine: SpeechRecognitionEngine?
+    private let connectivity: any ConnectivityMonitoring
+
+    init(connectivity: any ConnectivityMonitoring) {
+        self.connectivity = connectivity
+    }
+
+    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool {
+        SFSpeechRecognizer(locale: language.speechLocale)?.supportsOnDeviceRecognition ?? false
+    }
 
     // MARK: Permisos
 
@@ -56,9 +65,11 @@ final class AppleSpeechRecognizer: SpeechRecognitionProviding {
         let onDevice = try SpeechPolicy.requiresOnDevice(
             mode: mode,
             supportsOnDevice: recognizer.supportsOnDeviceRecognition,
-            language: language
+            language: language,
+            isConnected: connectivity.isConnected
         )
-        guard recognizer.isAvailable else {
+        // Con dictado local no hace falta que el servicio en línea esté disponible.
+        guard onDevice || recognizer.isAvailable else {
             throw SpeechServiceError.recognizerUnavailable(language)
         }
 

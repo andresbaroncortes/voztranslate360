@@ -11,6 +11,8 @@
 //    -demo-listen                     Empieza a «escuchar» al abrir la app.
 //    -demo-picker                     Abre el selector de idioma de destino.
 //    -demo-face                       Abre el modo cara a cara.
+//    -demo-recursos                   Abre Ajustes ▸ Idiomas sin conexión.
+//    -sin-red                         Simula que no hay conexión.
 //    -tab traducir|historial|ajustes  Pestaña inicial.
 //
 //  En la versión Release todas las propiedades devuelven el valor normal.
@@ -35,6 +37,8 @@ nonisolated enum DemoMode {
     static var startsListening: Bool { has("-demo-listen") }
     static var opensLanguagePicker: Bool { has("-demo-picker") }
     static var opensFaceToFace: Bool { has("-demo-face") }
+    static var opensOfflineResources: Bool { has("-demo-recursos") }
+    static var simulatesOffline: Bool { has("-sin-red") }
 
     static var initialTab: AppTab {
         #if DEBUG

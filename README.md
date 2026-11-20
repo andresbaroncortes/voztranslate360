@@ -15,7 +15,7 @@ Desarrollado por **Atlas Business**.
 | 2 | Selección de idiomas y traducción de texto (Apple Translation real) | ✅ Aprobada (2026-11-20) |
 | 3 | Reconocimiento de voz y lectura de traducciones | ✅ Aprobada (2026-11-20) |
 | 4 | Traducción bidireccional | En desarrollo (rama `fase-4`) |
-| 5 | Recursos offline y conectividad | Pendiente |
+| 5 | Recursos offline y conectividad | En desarrollo (rama `fase-5`) |
 | 6 | Historial, ajustes y optimización | Pendiente |
 | 7 | Compilación e instalación en iPhone | Pendiente |
 
@@ -110,3 +110,17 @@ La Fase 1 usa servicios **simulados**: no usa el micrófono ni traduce de verdad
 2. Activa **Turnos automáticos** y conversa con otra persona sin tocar la pantalla.
 3. Abre **Cara a cara**, pon el iPhone sobre la mesa y conversen: cada uno ve el texto en su idioma.
 4. Pulsa ⤢ en una burbuja y luego «Girar».
+
+## Fase 5 — Lista de comprobación (rama `fase-5`)
+
+**Qué cambia:**
+- Conexión **real** (Network / NWPathMonitor): el chip muestra si hay internet.
+- **Ajustes ▸ Idiomas sin conexión:** estado real por idioma de traducción (con botón **Descargar**), dictado en el iPhone y calidad de voz.
+- Reglas sin red: en **Automático**, si un idioma no está descargado, aviso inmediato (sin quedarse esperando); en **En línea** sin red se usa el dictado del iPhone si existe.
+
+**En el iPhone:**
+1. Ajustes ▸ **Idiomas sin conexión**: anota qué aparece en verde.
+2. Con Wi-Fi, pulsa **Descargar** en un idioma: debe aparecer la confirmación de iOS y, al terminar, pasar a «Sin conexión».
+3. Activa el **modo avión**: el chip debe cambiar a «Sin conexión» en segundos.
+4. En modo avión, traduce con un idioma **no** descargado: aviso claro e inmediato.
+5. En modo avión, traduce y dicta con un idioma descargado: debe funcionar.

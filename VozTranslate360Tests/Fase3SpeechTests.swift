@@ -22,6 +22,7 @@ private final class FailingRecognizer: SpeechRecognitionProviding {
         throw error
     }
     func stopRecognition() {}
+    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool { false }
 }
 
 /// Reconocedor lento al arrancar (simula el diálogo de permisos).
@@ -29,6 +30,7 @@ private final class FailingRecognizer: SpeechRecognitionProviding {
 private final class SlowStartRecognizer: SpeechRecognitionProviding {
     private var continuation: AsyncThrowingStream<RecognitionUpdate, Error>.Continuation?
     private(set) var stopCalls = 0
+    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool { true }
     func requestAuthorization() async -> PermissionStatus { .authorized }
     func startRecognition(language: AppLanguage, mode: ProcessingMode) async throws -> AsyncThrowingStream<RecognitionUpdate, Error> {
         try await Task.sleep(for: .milliseconds(300))

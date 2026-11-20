@@ -20,6 +20,9 @@ private final class FailingTranslator: TranslationProviding {
                    mode: ProcessingMode) async throws -> TranslationResult {
         throw error
     }
+    func prepare(from source: AppLanguage, to target: AppLanguage) async throws {
+        throw error
+    }
 }
 
 @MainActor
@@ -120,13 +123,14 @@ struct Fase2TranslationTests {
     }
 
     @Test func mismoIdiomaNoLlamaAlModelo() async throws {
-        let service = AppleTranslationService(availability: MockLanguageAvailability())
+        let service = AppleTranslationService(availability: MockLanguageAvailability(), connectivity: MockConnectivityMonitor())
         let result = try await service.translate("Hola", from: .spanish, to: .spanish, mode: .offline)
         #expect(result.text == "Hola")
     }
 
     @Test func servicioRealRechazaSinConexionAntesDeIntentar() async {
-        let service = AppleTranslationService(availability: MockLanguageAvailability(overrides: [.french: .needsDownload]))
+        let service = AppleTranslationService(availability: MockLanguageAvailability(overrides: [.french: .needsDownload]),
+                                              connectivity: MockConnectivityMonitor())
         await #expect(throws: TranslationServiceError.offlineResourceMissing(.spanish, .french)) {
             _ = try await service.translate("Hola", from: .spanish, to: .french, mode: .offline)
         }

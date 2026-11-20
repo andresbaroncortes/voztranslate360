@@ -11,7 +11,7 @@
 //  • LanguageAvailabilityChecking  → Translation.LanguageAvailability (Fase 2 ✔)
 //  • SpeechRecognitionProviding    → Speech + AVAudioEngine      (Fase 3 ✔)
 //  • SpeechSynthesizing            → AVSpeechSynthesizer         (Fase 3 ✔)
-//  • ConnectivityMonitoring        → Network (NWPathMonitor)     (Fase 5)
+//  • ConnectivityMonitoring        → Network (NWPathMonitor)     (Fase 5 ✔)
 //
 
 import Foundation
@@ -50,6 +50,7 @@ nonisolated enum PairAvailability: Sendable, Equatable {
 nonisolated enum TranslationServiceError: LocalizedError, Equatable {
     case unsupportedPair(AppLanguage, AppLanguage)
     case offlineResourceMissing(AppLanguage, AppLanguage)
+    case downloadRequiresConnection(AppLanguage, AppLanguage)
     case translationFailed(String)
     case emptyText
 
@@ -58,7 +59,9 @@ nonisolated enum TranslationServiceError: LocalizedError, Equatable {
         case let .unsupportedPair(from, to):
             "iOS no ofrece traducción de \(from.displayName) a \(to.displayName)."
         case let .offlineResourceMissing(from, to):
-            "\(from.displayName) → \(to.displayName) no está descargado para usarse sin conexión. Cambia el modo a «Automático» con conexión para descargarlo, o descárgalo en Ajustes ▸ Apps ▸ Traducir ▸ Idiomas descargados."
+            "\(from.displayName) → \(to.displayName) no está descargado para usarse sin conexión. Con conexión, descárgalo en Ajustes ▸ Idiomas sin conexión, o cambia el modo a «Automático»."
+        case let .downloadRequiresConnection(from, to):
+            "Para traducir de \(from.displayName) a \(to.displayName) hay que descargar el idioma una vez, y ahora no hay conexión. Conéctate a internet o elige un idioma instalado (Ajustes ▸ Idiomas sin conexión)."
         case let .translationFailed(reason):
             "No se pudo traducir. \(reason)"
         case .emptyText:
@@ -73,7 +76,8 @@ nonisolated enum TranslationPolicy {
     static func validate(_ availability: PairAvailability,
                          from source: AppLanguage,
                          to target: AppLanguage,
-                         mode: ProcessingMode) throws {
+                         mode: ProcessingMode,
+                         isConnected: Bool = true) throws {
         switch availability {
         case .unsupported:
             throw TranslationServiceError.unsupportedPair(source, target)
@@ -81,6 +85,9 @@ nonisolated enum TranslationPolicy {
             // Sin conexión no se puede descargar: se avisa en vez de intentarlo.
             if mode == .offline {
                 throw TranslationServiceError.offlineResourceMissing(source, target)
+            }
+            if !isConnected {
+                throw TranslationServiceError.downloadRequiresConnection(source, target)
             }
         case .installed:
             break
@@ -119,16 +126,23 @@ nonisolated enum SpeechPolicy {
     /// - Returns: `true` si debe exigirse el reconocimiento en el dispositivo.
     static func requiresOnDevice(mode: ProcessingMode,
                                  supportsOnDevice: Bool,
-                                 language: AppLanguage) throws -> Bool {
+                                 language: AppLanguage,
+                                 isConnected: Bool = true) throws -> Bool {
         switch mode {
         case .offline:
             guard supportsOnDevice else { throw SpeechServiceError.onDeviceUnavailable(language) }
             return true
         case .automatic:
-            // Prioriza lo local; si el idioma no lo admite, usa el servidor.
-            return supportsOnDevice
-        case .online:
+            // Prioriza lo local; si el idioma no lo admite, usa el servidor
+            // (solo si hay conexión).
+            if supportsOnDevice { return true }
+            guard isConnected else { throw SpeechServiceError.onDeviceUnavailable(language) }
             return false
+        case .online:
+            // Sin conexión, se recurre al dictado local si existe.
+            if isConnected { return false }
+            guard supportsOnDevice else { throw SpeechServiceError.recognizerUnavailable(language) }
+            return true
         }
     }
 }
@@ -141,6 +155,10 @@ protocol TranslationProviding: AnyObject {
                    from source: AppLanguage,
                    to target: AppLanguage,
                    mode: ProcessingMode) async throws -> TranslationResult
+
+    /// Descarga (si hace falta) los modelos del par para usarlo sin conexión.
+    /// iOS muestra su propia hoja de confirmación y progreso.
+    func prepare(from source: AppLanguage, to target: AppLanguage) async throws
 }
 
 @MainActor
@@ -160,6 +178,9 @@ protocol SpeechRecognitionProviding: AnyObject {
 
     /// Detiene la escucha y cierra el flujo con el último texto.
     func stopRecognition()
+
+    /// `true` si este iPhone puede dictar el idioma sin conexión.
+    func supportsOnDeviceDictation(for language: AppLanguage) -> Bool
 }
 
 @MainActor

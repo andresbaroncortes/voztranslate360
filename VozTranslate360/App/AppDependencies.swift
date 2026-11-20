@@ -34,35 +34,37 @@ final class AppDependencies {
 
     /// Todo simulado: pruebas automáticas, Previews y capturas.
     /// - Parameter overrides: estado forzado de ciertos idiomas.
-    static func mock(availability overrides: [AppLanguage: PairAvailability] = [:]) -> AppDependencies {
+    static func mock(availability overrides: [AppLanguage: PairAvailability] = [:],
+                     isConnected: Bool = true) -> AppDependencies {
         let checker = MockLanguageAvailability(overrides: overrides)
+        let connectivity = MockConnectivityMonitor(isConnected: isConnected)
         return AppDependencies(
-            translator: MockTranslationService(availability: checker),
+            translator: MockTranslationService(availability: checker, connectivity: connectivity),
             availability: checker,
             recognizer: MockSpeechRecognizer(),
             synthesizer: MockSpeechSynthesizer(),
-            connectivity: MockConnectivityMonitor()
+            connectivity: connectivity
         )
     }
 
-    /// Servicios reales disponibles hasta la fase actual.
-    /// Fase 3: traducción, disponibilidad, dictado y voz reales;
-    /// la conectividad sigue simulada hasta la Fase 5.
+    /// Todos los servicios reales (desde la Fase 5 ya no queda nada simulado).
     static func live() -> AppDependencies {
         let checker = AppleLanguageAvailabilityService()
+        let connectivity = NetworkConnectivityMonitor()
         return AppDependencies(
-            translator: AppleTranslationService(availability: checker),
+            translator: AppleTranslationService(availability: checker, connectivity: connectivity),
             availability: checker,
-            recognizer: AppleSpeechRecognizer(),
+            recognizer: AppleSpeechRecognizer(connectivity: connectivity),
             synthesizer: AppleSpeechSynthesizer(),
-            connectivity: MockConnectivityMonitor()
+            connectivity: connectivity
         )
     }
 
     static func makeDefault() -> AppDependencies {
         if DemoMode.usesMockServices {
             // En las capturas se muestran estados variados (simulados).
-            return mock(availability: [.german: .needsDownload, .portuguese: .needsDownload])
+            return mock(availability: [.german: .needsDownload, .portuguese: .needsDownload],
+                        isConnected: !DemoMode.simulatesOffline)
         }
         return live()
     }
