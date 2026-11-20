@@ -11,7 +11,10 @@ name: iOS
 on:
   push:
     branches: [main, 'fase-*']
+    # Los cambios solo de documentación no gastan minutos de macOS.
+    paths-ignore: ['**.md', 'docs/**', 'tools/**']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'tools/**']
   workflow_dispatch:
 
 concurrency:
