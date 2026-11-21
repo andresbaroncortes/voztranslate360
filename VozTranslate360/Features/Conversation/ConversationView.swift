@@ -32,12 +32,17 @@ struct ConversationView: View {
                     onSelectTarget: { pickerSide = .target },
                     onSwap: { viewModel.swapLanguages() }
                 )
+                // Controles compactos: crecen con la letra hasta un tamaño que
+                // quepa sin cortarse (las burbujas sí crecen sin límite).
+                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
 
                 HStack(spacing: 8) {
                     ProcessingModeMenu(settings: settings)
                     ConnectivityChip(isConnected: dependencies.connectivity.isConnected)
                     Spacer()
                 }
+                .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+                .lineLimit(1)
 
                 transcriptList
 
