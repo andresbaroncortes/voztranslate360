@@ -11,6 +11,8 @@ name: iOS
 on:
   push:
     branches: [main, 'fase-*']
+    # Etiqueta v1.0.0, v1.0.1… → publica una versión con el .ipa adjunto.
+    tags: ['v*']
     # Los cambios solo de documentación no gastan minutos de macOS.
     paths-ignore: ['**.md', 'docs/**', 'tools/**']
   pull_request:
@@ -20,6 +22,9 @@ on:
 concurrency:
   group: ios-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -76,6 +81,7 @@ jobs:
             -destination "id=${{ steps.sim.outputs.udid }}" \
             -derivedDataPath build/sim \
             -resultBundlePath build/Pruebas.xcresult \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO \
             > "$LOG" 2>&1 && STATUS=0 || STATUS=$?
           echo "::group::Errores, avisos y pruebas"
@@ -114,6 +120,13 @@ jobs:
             shoot "$mode-8-recursos"      5 -demo -demo-recursos -tab ajustes
             shoot "$mode-9-sin-red"       5 -demo -sin-red -tab traducir
           done
+
+          # Accesibilidad: letra muy grande, para revisar que nada se corte.
+          xcrun simctl ui "$UDID" appearance light
+          xcrun simctl ui "$UDID" content_size accessibility-extra-large || true
+          shoot "accesible-1-conversacion" 5 -demo -tab traducir
+          shoot "accesible-2-ajustes"      5 -mock -tab ajustes
+          xcrun simctl ui "$UDID" content_size large || true
           ls -la screenshots
 
       - name: Compilar para iPhone (IPA sin firmar)
@@ -124,6 +137,7 @@ jobs:
             -configuration Release \
             -destination "generic/platform=iOS" \
             -derivedDataPath build/device \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             > "$LOG" 2>&1 && STATUS=0 || STATUS=$?
           grep -E "error:|warning:|\*\* " "$LOG" | sort -u | head -200 || true
@@ -150,6 +164,16 @@ jobs:
         with:
           name: ipa-sin-firmar
           path: VozTranslate360-sin-firmar.ipa
+
+      - name: Publicar versión (solo etiquetas v*)
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp VozTranslate360-sin-firmar.ipa "VozTranslate360-${GITHUB_REF_NAME}.ipa"
+          gh release create "$GITHUB_REF_NAME" "VozTranslate360-${GITHUB_REF_NAME}.ipa" \
+            --title "VozTranslate 360 ${GITHUB_REF_NAME}" \
+            --notes-file CHANGELOG.md
 
       - name: Subir registros
         if: always()

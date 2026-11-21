@@ -30,7 +30,12 @@ final class SwiftDataHistoryStore: HistoryStoring {
     }
 
     func deleteOlderThan(_ date: Date) throws {
-        try context.delete(model: ConversationEntry.self, where: #Predicate { $0.createdAt < date })
+        // Se filtra en memoria: el historial es solo texto y local, y así se
+        // evita la advertencia de concurrencia de #Predicate en Swift 6.
+        let entries = try context.fetch(FetchDescriptor<ConversationEntry>())
+        for entry in entries where entry.createdAt < date {
+            context.delete(entry)
+        }
         try context.save()
     }
 

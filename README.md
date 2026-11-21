@@ -5,6 +5,8 @@ Desarrollado por **Atlas Business**.
 
 - Arquitectura y compatibilidad: [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md)
 - Compilar sin Mac (GitHub Actions + Sideloadly): [docs/COMPILAR_SIN_MAC.md](docs/COMPILAR_SIN_MAC.md)
+- Instalación en iPhone: [docs/INSTALACION.md](docs/INSTALACION.md) · Plan de pruebas: [docs/PLAN_DE_PRUEBAS.md](docs/PLAN_DE_PRUEBAS.md)
+- Política de privacidad: [docs/PRIVACIDAD.md](docs/PRIVACIDAD.md) · Cambios: [CHANGELOG.md](CHANGELOG.md)
 - Código: [VozTranslate360/](VozTranslate360/) · Pruebas: [VozTranslate360Tests/](VozTranslate360Tests/) · Proyecto: [project.yml](project.yml)
 
 ## Estado
@@ -17,7 +19,7 @@ Desarrollado por **Atlas Business**.
 | 4 | Traducción bidireccional | En desarrollo (rama `fase-4`) |
 | 5 | Recursos offline y conectividad | En desarrollo (rama `fase-5`) |
 | 6 | Historial, ajustes y optimización | En desarrollo (rama `fase-6`) |
-| 7 | Compilación e instalación en iPhone | Pendiente |
+| 7 | Compilación e instalación en iPhone (v1.0.0) | En desarrollo (rama `fase-7`) |
 
 ## Dónde se hace cada tarea
 
@@ -139,3 +141,12 @@ La Fase 1 usa servicios **simulados**: no usa el micrófono ni traduce de verdad
 3. Ajustes ▸ **Variante regional del dictado** ▸ elige **español (Colombia)** (si aparece) y dicta: debe reconocer mejor tu acento.
 4. Desactiva «Guardar historial», traduce: no debe aparecer en el historial.
 5. «Borrar todo el historial»: pide confirmación y lo vacía.
+
+## Fase 7 — Compilación, instalación y pruebas reales (rama `fase-7`)
+
+- Versión **1.0.0**; el número de compilación es el de la ejecución de GitHub Actions (visible en Ajustes ▸ Acerca de).
+- Etiqueta `v1.0.0` → GitHub publica una **Release** con el `.ipa` adjunto.
+- Capturas de **accesibilidad** (letra muy grande).
+- Documentación: [INSTALACION.md](docs/INSTALACION.md), [PLAN_DE_PRUEBAS.md](docs/PLAN_DE_PRUEBAS.md), [PRIVACIDAD.md](docs/PRIVACIDAD.md).
+
+**Cierre:** completar el plan de pruebas en el iPhone; con las pruebas críticas en ✅ se unen las ramas a `main` y se publica `v1.0.0`.
